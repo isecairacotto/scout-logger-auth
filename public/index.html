@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Scout Logger</title>
 
+<!-- PWA bits -->
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#13294B">
 
@@ -27,7 +28,7 @@
   label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
   input[type="text"],input[type="password"],select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:16px}
   .seg{display:flex;gap:8px;flex-wrap:wrap}
-  .seg button{flex:1 1 auto;min-width:84px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-weight:600}
+  .seg button{flex:1 1 auto;min-width:84px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-weight:600;cursor:pointer}
   .seg button.active{border-color:var(--navy);color:#fff;background:var(--navy)}
   .seg.sm button{min-width:70px;padding:9px 10px;font-size:14px}
   .slider-wrap{display:flex;align-items:center;gap:10px}
@@ -50,21 +51,12 @@
   .tab.active{background:#f3f5fa;color:var(--navy);font-weight:800}
   .hidden{display:none}
   .success{padding:10px 12px;border:1px solid #c9ebd6;background:#effaf4;color:#136b3c;border-radius:10px}
-  /* DSP */
-  #eventSection{display:none}
-  .toggle{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid var(--border);background:#fff;cursor:pointer}
-  .toggle.active{background:#eef6ff;border-color:#cfe4ff}
-  .checklist{display:none;margin-top:8px;padding:10px;border:1px dashed var(--border);border-radius:10px;background:#fcfcff}
-  .checklist.show{display:block}
-  .team-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
-  .team-chip{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13px}
-  @media(max-width:600px){ .team-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
 </style>
 </head>
 <body>
   <header>
     <div class="brand"><h1>Scout Logger</h1></div>
-    <div id="topbar" class="hint"></div>
+    <div class="hint" id="netBadge"></div>
   </header>
 
   <main class="grid">
@@ -72,156 +64,165 @@
     <section id="view-login" class="card">
       <h2>Login</h2>
       <div class="grid cols-2">
-        <div><label>Username</label><input id="loginUser" type="text" placeholder="username" autocomplete="username" /></div>
-        <div><label>Password</label><input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" /></div>
+        <div>
+          <label>Username</label>
+          <input id="loginUser" type="text" placeholder="username" autocomplete="username" />
+        </div>
+        <div>
+          <label>Password</label>
+          <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
       </div>
-      <div class="row" style="margin-top:10px">
-        <button id="loginBtn" class="primary">Sign in</button>
-        <button id="offlineBtn" class="btn" type="button">Continue Offline</button>
+      <div class="row" style="margin-top:12px">
+        <button id="loginBtn" class="primary" type="button">Sign in</button>
+        <button id="offlineBtn" class="ghost" type="button">Continue Offline</button>
         <span id="loginMsg" class="hint"></span>
       </div>
     </section>
 
-    <!-- SCOUT -->
-    <section id="view-scout" class="hidden">
-      <div class="card">
-        <div class="row">
-          <div id="whoami" class="hint"></div>
-          <div class="right"><button id="logout1" class="ghost">Logout</button></div>
-        </div>
-        <div class="tabs" id="scoutTabs">
-          <div class="tab active" data-tab="history">History</div>
-          <div class="tab" data-tab="new">New Event</div>
-        </div>
+    <!-- SCOUT HOME -->
+    <section id="view-scout" class="card hidden">
+      <div class="row">
+        <div id="whoami" class="hint"></div>
+        <div class="right"><button id="logout1" class="ghost" type="button">Logout</button></div>
       </div>
 
-      <!-- History -->
-      <section id="scout-history" class="card">
-  <h2>History</h2>
-  <div class="row" style="margin-bottom:6px">
-    <span class="hint">Saved workouts (on this device).</span>
-    <div class="right">
-      <!-- All-events CSV -->
-      <button class="ghost" id="exportAllCsvBtn">Download All CSV</button>
-    </div>
-  </div>
+      <div class="tabs" id="scoutTabs">
+        <div class="tab active" data-tab="history">History</div>
+        <div class="tab" data-tab="new">New Event</div>
+      </div>
 
-  <table id="eventsTable">
-    <thead>
-      <tr>
-        <th>Date</th><th>Event</th><th>Location</th><th>Scout</th><th>Pitches</th><th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td colspan="6" class="hint">No events yet.</td></tr>
-    </tbody>
-  </table>
-</section>
+      <!-- Scout History -->
+      <div id="scout-history">
+        <div class="row" style="margin-bottom:6px">
+          <span class="hint">Your submitted events</span>
+          <div class="right"><button id="scoutRefresh" class="ghost" type="button">Refresh</button></div>
+        </div>
+        <table id="scoutEventsTable">
+          <thead><tr><th>Date</th><th>Name</th><th>Location</th><th>Pitches</th><th>CSV</th></tr></thead>
+          <tbody><tr><td colspan="5" class="hint">No events yet.</td></tr></tbody>
+        </table>
+      </div>
 
-      <!-- New Event (YOUR EXACT LAYOUT) -->
-      <section id="scout-new" class="card hidden">
-        <h2>Create Player</h2>
-        <div class="grid cols-2">
-          <div>
-            <label>Last, First</label>
-            <input id="playerName" type="text" placeholder="Doe, Jane" autocomplete="off" />
-          </div>
-          <div>
-            <label>Role</label>
-            <div class="seg sm" id="roleSeg">
-              <button type="button" data-role="batter">Batter</button>
-              <button type="button" data-role="dual">Dual</button>
-              <button type="button" data-role="pitcher">Pitcher</button>
+      <!-- Scout New Event -->
+      <div id="scout-new" class="hidden">
+        <!-- Create Player -->
+        <section class="card" style="margin-top:10px">
+          <h2>Create Player</h2>
+          <div class="grid cols-2">
+            <div>
+              <label>Last, First</label>
+              <input id="playerName" type="text" placeholder="Doe, Jane" autocomplete="off" />
+            </div>
+            <div>
+              <label>Role</label>
+              <div class="seg sm" id="roleSeg">
+                <button type="button" data-role="batter">Batter</button>
+                <button type="button" data-role="dual">Dual</button>
+                <button type="button" data-role="pitcher">Pitcher</button>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <button class="ghost" id="addPlayerBtn">Add Player</button>
-          <span class="hint">Names in dropdowns are sorted A→Z by “Last, First”.</span>
-        </div>
+          <div class="row" style="margin-top:8px">
+            <button class="ghost" id="addPlayerBtn">Add Player</button>
+            <span class="hint">Names in dropdowns are sorted A→Z by “Last, First”.</span>
+          </div>
+        </section>
 
-        <div style="height:8px"></div>
-        <h2>Select Participants</h2>
-        <div class="grid cols-2">
-          <div><label>Pitcher</label><select id="pitcherSelect"></select></div>
-          <div><label>Hitter</label><select id="batterSelect"></select></div>
-        </div>
-
-        <div style="height:8px"></div>
-        <h2>Pitch Details</h2>
-        <label>Zone</label>
-        <div class="seg sm" id="zoneSeg">
-          <button type="button" data-val="IN">IN</button>
-          <button type="button" data-val="OUT">OUT</button>
-        </div>
-
-        <div style="height:10px"></div>
-        <label>Action</label>
-        <div class="seg sm" id="actionSeg">
-          <button type="button" data-val="TAKE">Take</button>
-          <button type="button" data-val="S/M">S/M</button>
-          <button type="button" data-val="FOUL">Foul</button>
-          <button type="button" data-val="BIP">BIP</button>
-          <button type="button" data-val="HBP">HBP</button>
-        </div>
-
-        <div style="height:10px"></div>
-        <label>Pitch Type</label>
-        <div class="seg sm" id="pitchTypeSeg">
-          <button type="button" data-val="FB">FB</button>
-          <button type="button" data-val="CB">CB</button>
-          <button type="button" data-val="SL">SL</button>
-          <button type="button" data-val="CH">CH</button>
-          <button type="button" data-val="SF">SF</button>
-          <button type="button" data-val="SI">SI</button>
-          <button type="button" data-val="OTHER">OTHER</button>
-        </div>
-
-        <div style="height:10px"></div>
-        <div class="grid cols-2">
-          <div>
-            <label>Velo (mph) — slide or type, blank/NA=NA</label>
-            <div class="slider-wrap">
-              <input id="velo" type="range" min="0" max="105" value="0" />
-              <input id="veloBox" type="text" class="badge-input" placeholder="NA" inputmode="numeric" aria-label="Velocity value" />
+        <!-- Select Participants -->
+        <section class="card" style="margin-top:10px">
+          <h2>Select Participants</h2>
+          <div class="grid cols-2">
+            <div>
+              <label>Pitcher</label>
+              <select id="pitcherSelect"></select>
+            </div>
+            <div>
+              <label>Hitter</label>
+              <select id="batterSelect"></select>
             </div>
           </div>
-          <div>
-            <label>Spin (rpm) — slide or type, blank/NA=NA</label>
-            <div class="slider-wrap">
-              <input id="spin" type="range" min="0" max="4000" value="0" />
-              <input id="spinBox" type="text" class="badge-input" placeholder="NA" inputmode="numeric" aria-label="Spin rate value" />
+        </section>
+
+        <!-- Pitch Details -->
+        <section class="card" style="margin-top:10px">
+          <h2>Pitch Details</h2>
+          <label>Zone</label>
+          <div class="seg sm" id="zoneSeg">
+            <button type="button" data-val="IN">IN</button>
+            <button type="button" data-val="OUT">OUT</button>
+          </div>
+
+          <div style="height:10px"></div>
+          <label>Action</label>
+          <div class="seg sm" id="actionSeg">
+            <button type="button" data-val="TAKE">Take</button>
+            <button type="button" data-val="S/M">S/M</button>
+            <button type="button" data-val="FOUL">Foul</button>
+            <button type="button" data-val="BIP">BIP</button>
+            <button type="button" data-val="HBP">HBP</button>
+          </div>
+
+          <div style="height:10px"></div>
+          <label>Pitch Type</label>
+          <div class="seg sm" id="pitchTypeSeg">
+            <button type="button" data-val="FB">FB</button>
+            <button type="button" data-val="CB">CB</button>
+            <button type="button" data-val="SL">SL</button>
+            <button type="button" data-val="CH">CH</button>
+            <button type="button" data-val="SF">SF</button>
+            <button type="button" data-val="SI">SI</button>
+            <button type="button" data-val="OTHER">OTHER</button>
+          </div>
+
+          <div style="height:10px"></div>
+          <div class="grid cols-2">
+            <div>
+              <label>Velo (mph) — slide or type, blank/NA=NA</label>
+              <div class="slider-wrap">
+                <input id="velo" type="range" min="0" max="105" value="0" />
+                <input id="veloBox" type="text" class="badge-input" placeholder="NA" inputmode="numeric" aria-label="Velocity value" />
+              </div>
+            </div>
+            <div>
+              <label>Spin (rpm) — slide or type, blank/NA=NA</label>
+              <div class="slider-wrap">
+                <input id="spin" type="range" min="0" max="4000" value="0" />
+                <input id="spinBox" type="text" class="badge-input" placeholder="NA" inputmode="numeric" aria-label="Spin rate value" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div style="height:12px"></div>
-        <div class="actions-row">
-          <button class="secondary" id="missPitchBtn" title="Logs row with blanks">Miss Pitch</button>
-          <div class="right"></div>
-          <button class="primary" id="submitPitchBtn">Submit Pitch</button>
-        </div>
-        <div class="hint" style="margin-top:6px">After each submission, all pitch details reset to unselected and NA.</div>
-
-        <div style="height:12px"></div>
-        <h2>Logged Pitches</h2>
-        <div class="row" style="margin-bottom:6px"><span class="hint" id="countHint">0 pitches</span></div>
-        <div style="overflow:auto;max-height:55vh;margin-top:8px">
-          <table id="pitchTable">
-            <thead>
-              <tr>
-                <th>Time</th><th>Pitcher</th><th>Hitter</th><th>Zone</th><th>Action</th><th>Pitch Type</th><th>Velo</th><th>Spin</th><th>Edit</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-          <div class="row" style="margin-top:10px">
-            <div class="right"><button class="ghost" id="submitEventOpenBtn">Submit Event</button></div>
+          <div style="height:12px"></div>
+          <div class="actions-row">
+            <button class="secondary" id="missPitchBtn" title="Logs a row with blanks (except players & timestamp).">Miss Pitch</button>
+            <div class="right"></div>
+            <button class="primary" id="submitPitchBtn">Submit Pitch</button>
           </div>
-        </div>
+          <div class="hint" style="margin-top:6px">After each submission, all pitch details reset to unselected and NA.</div>
+        </section>
 
-        <!-- Submit Event Panel -->
-        <section id="eventSection" class="card" style="margin-top:10px">
+        <!-- Logged Pitches -->
+        <section class="card" style="margin-top:10px">
+          <h2>Logged Pitches</h2>
+          <div class="row" style="margin-bottom:6px"><span class="hint" id="countHint">0 pitches</span></div>
+          <div style="overflow:auto;max-height:55vh;margin-top:8px">
+            <table id="pitchTable">
+              <thead>
+                <tr>
+                  <th>Time</th><th>Pitcher</th><th>Hitter</th><th>Zone</th><th>Action</th><th>Pitch Type</th><th>Velo</th><th>Spin</th><th>Edit</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div class="row" style="margin-top:10px">
+              <div class="right"><button class="ghost" id="submitEventOpenBtn">Submit Event</button></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Submit Event panel -->
+        <section id="eventSection" class="card hidden">
           <h2>Submit Event</h2>
           <div class="grid cols-2">
             <div><label>Date (MM/DD/YYYY)</label><input id="eventDate" type="text" readonly /></div>
@@ -229,64 +230,60 @@
             <div><label>Event Name</label><input id="eventName" type="text" placeholder="e.g., Perfect Game 17U" /></div>
             <div><label>Location</label><input id="eventLocation" type="text" placeholder="City, ST / Complex" /></div>
           </div>
-
-          <div style="height:10px"></div>
-          <div>
-            <div class="row"><label>DSP?</label><button type="button" id="dspToggle" class="toggle" aria-pressed="false">No</button></div>
-            <div id="dspChecklist" class="checklist">
-              <label><input type="checkbox" id="ckBlast"> Blast</label>
-              <div class="team-input" id="blastTeamWrap" style="display:none;">
-                <label>Which team(s) (Blast)</label>
-                <div id="blastTeams" class="team-grid"></div>
-              </div>
-              <label><input type="checkbox" id="ckTrackman"> Trackman</label>
-              <div class="team-input" id="trackmanTeamWrap" style="display:none;">
-                <label>Which team(s) (Trackman)</label>
-                <div id="trackmanTeams" class="team-grid"></div>
-              </div>
-            </div>
-          </div>
-
           <div style="height:12px"></div>
           <div class="actions-row"><div class="right"></div><button class="primary" id="finalSubmitBtn">Submit Event</button></div>
           <div id="eventMsg" style="margin-top:10px"></div>
         </section>
-      </section>
+      </div>
     </section>
 
-    <!-- ADMIN -->
-    <section id="view-admin" class="hidden">
-      <div class="card">
-        <div class="row">
-          <div id="adminWhoami" class="hint"></div>
-          <div class="right"><button id="logout2" class="ghost">Logout</button></div>
-        </div>
-        <div class="tabs">
-          <div class="tab active" id="adminScoutsTab">Scouts</div>
-          <div class="tab" id="adminNewTab">New Event</div>
+    <!-- ADMIN HOME -->
+    <section id="view-admin" class="card hidden">
+      <div class="row">
+        <div id="adminWhoami" class="hint"></div>
+        <div class="right"><button id="logout2" class="ghost" type="button">Logout</button></div>
+      </div>
+
+      <div class="tabs" id="adminTabs">
+        <div class="tab active" data-tab="scouts">Scouts</div>
+        <div class="tab" data-tab="new">New Event</div>
+      </div>
+
+      <!-- Admin: scout list + history -->
+      <div id="admin-scouts">
+        <div class="grid cols-2">
+          <section class="card">
+            <h2>Scouts</h2>
+            <label for="scoutPicker">Select Scout</label>
+            <select id="scoutPicker"></select>
+          </section>
+
+          <section class="card">
+            <h2>Selected Scout</h2>
+            <div class="row" style="margin-bottom:6px">
+              <span class="hint" id="selScoutHint">No scout selected.</span>
+              <div class="right"><button id="adminRefresh" class="ghost" type="button">Refresh</button></div>
+            </div>
+            <table id="adminEventsTable">
+              <thead><tr><th>Date</th><th>Name</th><th>Location</th><th>Pitches</th><th>CSV</th></tr></thead>
+              <tbody><tr><td colspan="5" class="hint">Pick a scout to view events.</td></tr></tbody>
+            </table>
+          </section>
         </div>
       </div>
 
-      <section id="adminScoutsView" class="card">
-        <h2>Scouts</h2>
-        <div class="row" style="margin:10px 0">
-          <label>Select Scout</label>
-          <select id="adminScoutSelect" style="min-width:220px;margin-left:8px"></select>
-          <button class="ghost" id="adminExportAllBtn" type="button" style="margin-left:8px">Download All CSV (Selected)</button>
+      <!-- Admin: New Event (same logger UI) -->
+      <div id="admin-new" class="hidden">
+        <div class="row" style="margin-bottom:8px">
+          <button id="backToAdminBtn" class="ghost" type="button">← Back to Admin</button>
         </div>
-        <table id="adminEventsTable">
-          <thead><tr><th>Date</th><th>Event</th><th>Location</th><th>Scout</th><th>Pitches</th><th>Actions</th></tr></thead>
-        <tbody><tr><td colspan="6" class="hint">Pick a scout to view their local history.</td></tr></tbody>
-        </table>
-      </section>
-
-      <section id="adminNewView" class="card hidden">
-        <h2>New Event</h2>
-        <div class="hint">Admins use the same New Event form. Opening it for you now…</div>
-      </section>
+        <!-- Reuse the same logger DOM by mounting below -->
+        <div id="adminLoggerMount"></div>
+      </div>
     </section>
   </main>
 
+  <!-- icons -->
   <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
     <symbol id="ico-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42L18.37 3.29a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.83z"/></symbol>
     <symbol id="ico-check" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></symbol>
@@ -294,543 +291,464 @@
   </svg>
 
 <script>
-    
 (function(){
+  // PWA: register service worker for offline shell
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(console.error);
   }
-  // Offline SW (inline)
-  if ('serviceWorker' in navigator) {
-    const sw = `
-      const CACHE='scout-logger-v1';
-      self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./','./index.html'])))});
-      self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=> r || fetch(e.request).catch(()=> caches.match('./index.html'))))});
-    `;
-    const u = URL.createObjectURL(new Blob([sw], {type:'text/javascript'}));
-    navigator.serviceWorker.register(u).catch(()=>{});
-  }
 
-  const API = '';
+  // ---- helpers
+  const API = ''; // same-origin
+  const $ = (sel) => document.querySelector(sel);
+  const byId = (id) => document.getElementById(id);
 
-  // ---------- DOM ----------
-  const vLogin = document.getElementById('view-login');
-  const vScout = document.getElementById('view-scout');
-  const vAdmin = document.getElementById('view-admin');
-
-  const loginUser = document.getElementById('loginUser');
-  const loginPass = document.getElementById('loginPass');
-  const loginBtn  = document.getElementById('loginBtn');
-  const loginMsg  = document.getElementById('loginMsg');
-  const offlineBtn = $('#offlineBtn');
-
-
-  const whoami = document.getElementById('whoami');
-  const adminWhoami = document.getElementById('adminWhoami');
-  const logout1 = document.getElementById('logout1');
-  const logout2 = document.getElementById('logout2');
-
-  const scoutTabs = document.getElementById('scoutTabs');
-  const panelHistory = document.getElementById('scout-history');
-  const panelNew = document.getElementById('scout-new');
-
-  const eventsTableBody = document.querySelector('#eventsTable tbody');
-  const exportAllCsvBtn = document.getElementById('exportAllCsvBtn');
-
-  // New Event elements (your UI)
-  const roleSeg=document.getElementById('roleSeg'), zoneSeg=document.getElementById('zoneSeg'), actionSeg=document.getElementById('actionSeg'), pitchTypeSeg=document.getElementById('pitchTypeSeg');
-  const addPlayerBtn=document.getElementById('addPlayerBtn'), playerNameInput=document.getElementById('playerName'), pitcherSelect=document.getElementById('pitcherSelect'), batterSelect=document.getElementById('batterSelect');
-  const velo=document.getElementById('velo'), spin=document.getElementById('spin'), veloBox=document.getElementById('veloBox'), spinBox=document.getElementById('spinBox');
-  const submitPitchBtn=document.getElementById('submitPitchBtn'), missPitchBtn=document.getElementById('missPitchBtn'), pitchTableBody=document.querySelector('#pitchTable tbody'), countHint=document.getElementById('countHint');
-  const submitEventOpenBtn=document.getElementById('submitEventOpenBtn'), eventSection=document.getElementById('eventSection');
-  const eventDate=document.getElementById('eventDate'), scoutName=document.getElementById('scoutName'), eventName=document.getElementById('eventName'), eventLocation=document.getElementById('eventLocation');
-  const dspToggle=document.getElementById('dspToggle'), dspChecklist=document.getElementById('dspChecklist'), finalSubmitBtn=document.getElementById('finalSubmitBtn'), eventMsg=document.getElementById('eventMsg');
-  const ckBlast=document.getElementById('ckBlast'), ckTrackman=document.getElementById('ckTrackman');
-  const blastTeamWrap=document.getElementById('blastTeamWrap'), trackmanTeamWrap=document.getElementById('trackmanTeamWrap');
-  const blastTeams=document.getElementById('blastTeams'), trackmanTeams=document.getElementById('trackmanTeams');
-
-  // Admin
-  const adminScoutsTab = document.getElementById('adminScoutsTab');
-  const adminNewTab    = document.getElementById('adminNewTab');
-  const adminScoutsView= document.getElementById('adminScoutsView');
-  const adminNewView   = document.getElementById('adminNewView');
-  const adminScoutSelect = document.getElementById('adminScoutSelect');
-  const adminEventsTableBody = document.querySelector('#adminEventsTable tbody');
-  const adminExportAllBtn = document.getElementById('adminExportAllBtn');
-
-  const topbar = document.getElementById('topbar');
-
-  // ---------- Session & Storage ----------
   function saveSession(s){ localStorage.setItem('session', JSON.stringify(s)); }
   function loadSession(){ try { return JSON.parse(localStorage.getItem('session')) } catch { return null } }
   function clearSession(){ localStorage.removeItem('session'); }
-  function show(view){ vLogin.classList.add('hidden'); vScout.classList.add('hidden'); vAdmin.classList.add('hidden'); view.classList.remove('hidden'); }
 
-  function getUser(){ try { return JSON.parse(localStorage.getItem('session'))?.username || 'guest'; } catch { return 'guest'; } }
-  function keyPlayers(u){ return `players_${u}` }
-  function keyPitches(u){ return `pitches_${u}` } // working set
-  function keyEvents(u){  return `events_${u}` }  // saved events
-  function loadJSON(k, fb){ try{ return JSON.parse(localStorage.getItem(k)) ?? fb; }catch{ return fb; } }
-  function saveJSON(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
+  function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+  function load(k,fb){ try{ return JSON.parse(localStorage.getItem(k)) ?? fb; } catch{ return fb; } }
 
-  // ---------- CSV ----------
-  function toCSV(rows, headers){
-    const esc = v => { if (v == null) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
-    const head = headers.join(',');
-    const body = rows.map(r => headers.map(h => esc(r[h])).join(',')).join('\n');
-    return head + '\n' + body;
-  }
-  function download(filename, text){
-    const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
-  }
-
-  // ---------- Login ----------
-  async function login(){
-    loginMsg.textContent = '';
-    const username = loginUser.value.trim();
-    const password = loginPass.value.trim();
-    if(!username || !password){ loginMsg.textContent = 'Enter username and password'; return; }
-    try{
-      const res = await fetch(API + '/api/login', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ username, password }) });
-      if(!res.ok){ loginMsg.textContent = 'Invalid credentials'; return; }
-      const data = await res.json();
-      saveSession({ token: data.token, role: data.role, fullName: data.fullName, username });
-      routeByRole();
-    }catch{ loginMsg.textContent = 'Network error'; }
-  }
-  function routeByRole(){
-    const s = loadSession();
-    if(!s){ show(vLogin); topbar.textContent=''; return; }
-     loggerBooted = false;
-    if(s.role === 'admin'){
-      adminWhoami.textContent = `Signed in as ${s.fullName} (admin)`;
-      topbar.textContent = `${s.fullName} — Admin`;
-      show(vAdmin);
-      initAdminUI();
-      // default to Scouts tab
-      adminScoutsTab.classList.add('active'); adminNewTab.classList.remove('active');
-      adminScoutsView.classList.remove('hidden'); adminNewView.classList.add('hidden');
-    } else {
-      whoami.textContent = `Signed in as ${s.fullName}`;
-      topbar.textContent = `${s.fullName}`;
-      show(vScout);
-      // default to History tab
-      document.querySelector('[data-tab="history"]').click();
-    }
-  }
-  loginBtn.addEventListener('click', login);
-  loginUser.addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
-  loginPass.addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
-  logout1.addEventListener('click', ()=>{
-  clearSession();
-  loggerBooted = false;   // reset logger when logging out
-  routeByRole();
-});
-
-logout2.addEventListener('click', ()=>{
-  clearSession();
-  loggerBooted = false;   // reset logger when logging out
-  routeByRole();
-});
-
-  offlineBtn.addEventListener('click', ()=>{
-    const s = loadSession();
-    if (!s) {
-      loginMsg.textContent = 'No prior session found on this device.';
-      return;
-    }
-    routeByRole(); // sends you to admin or scout view using stored session
-  });
-
-  // ---------- Scout Tabs ----------
-  scoutTabs.addEventListener('click', (e)=>{
-  const t = e.target.closest('.tab'); if(!t) return;
-  const s = loadSession();               // <- check current role
-  const tab = t.dataset.tab;
-
-  // If an ADMIN clicks back to "History" from New Event, return to the admin view
-  if (s?.role === 'admin' && tab === 'history') {
-    // optionally set the admin’s default tab (e.g., Scouts list)
-    show(vAdmin);
-    return;
-  }
-
-  // Normal scout behavior:
-  scoutTabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active');
-  panelHistory.classList.toggle('hidden', tab!=='history');
-  panelNew.classList.toggle('hidden', tab!=='new');
-  if (tab === 'new') initLoggerOnce();
-});
-;
-
-  // ---------- Logger (Your UI) ----------
-  const MLB_TEAMS = ['ARI','ATH','ATL','BAL','BOS','CHC','CIN','CLE','COL','CWS','DET','HOU','KC','LAA','LAD','MIA','MIL','MIN','NYM','NYY','PHI','PIT','SD','SEA','SF','STL','TB','TEX','TOR','WSH'];
   function todayMDY(){ const d=new Date(); return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()}`; }
   function nowStamp(){ const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`; }
-  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
-  function setActive(seg, btn){ seg.querySelectorAll('button').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
-  function clearActive(seg){ seg.querySelectorAll('button').forEach(b=>b.classList.remove('active')); }
-  function getActiveVal(seg){ const b = seg.querySelector('button.active'); return b ? (b.dataset.val || b.dataset.role) : ''; }
-  function addOption(select, text){ const opt=document.createElement('option'); opt.text=text; opt.value=text; select.add(opt); }
+  function setNetBadge(){ byId('netBadge').textContent = navigator.onLine ? 'Online' : 'Offline'; }
+  window.addEventListener('online', setNetBadge); window.addEventListener('offline', setNetBadge); setNetBadge();
 
+  // ---- views
+  const vLogin = byId('view-login');
+  const vScout = byId('view-scout');
+  const vAdmin = byId('view-admin');
+
+  function show(view){
+    vLogin.classList.add('hidden');
+    vScout.classList.add('hidden');
+    vAdmin.classList.add('hidden');
+    view.classList.remove('hidden');
+  }
+
+  // ---- login elements
+  const loginUser = byId('loginUser');
+  const loginPass = byId('loginPass');
+  const loginBtn  = byId('loginBtn');
+  const offlineBtn= byId('offlineBtn');
+  const loginMsg  = byId('loginMsg');
+
+  // ---- common UI
+  const whoami = byId('whoami');
+  const adminWhoami = byId('adminWhoami');
+  const logout1 = byId('logout1');
+  const logout2 = byId('logout2');
+
+  // ---- SCOUT tabs
+  const scoutTabs = byId('scoutTabs');
+  const panelHistory = byId('scout-history');
+  const panelNew = byId('scout-new');
+  const scoutEventsTable = byId('scoutEventsTable');
+  const scoutRefresh = byId('scoutRefresh');
+
+  // ---- ADMIN tabs
+  const adminTabs = byId('adminTabs');
+  const adminScouts = byId('admin-scouts');
+  const adminNew = byId('admin-new');
+  const backToAdminBtn = byId('backToAdminBtn');
+  const scoutPicker = byId('scoutPicker');
+  const selScoutHint = byId('selScoutHint');
+  const adminEventsTable = byId('adminEventsTable');
+  const adminRefresh = byId('adminRefresh');
+
+  // ---------- per-user storage keys ----------
+  function keysFor(user){
+    return {
+      players: `players_${user}`,
+      pitches: `pitches_${user}`,
+      events:  `events_${user}` // array of submitted events
+    };
+  }
+
+  // ---------- LOGIN ----------
+  async function login(){
+    loginMsg.textContent = '';
+    const username = (loginUser.value||'').trim();
+    const password = (loginPass.value||'').trim();
+    if(!username || !password){ loginMsg.textContent='Enter username and password'; return; }
+
+    try{
+      const res = await fetch(API + '/api/login', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      if(!res.ok){ loginMsg.textContent='Invalid credentials'; return; }
+      const data = await res.json(); // { token, fullName, role }
+      saveSession({ token: data.token, role: data.role, fullName: data.fullName, username });
+      routeByRole(true);
+    }catch(err){
+      console.error(err);
+      loginMsg.textContent = 'Network error';
+    }
+  }
+
+  function routeByRole(resetLogger){
+    const s = loadSession();
+    if(!s){ show(vLogin); return; }
+    if(resetLogger) loggerBooted = false; // ensure fresh logger on user change
+    if(s.role === 'admin'){
+      adminWhoami.textContent = `Signed in as ${s.fullName} (admin)`;
+      populateScoutPicker();
+      show(vAdmin);
+    } else {
+      whoami.textContent = `Signed in as ${s.fullName}`;
+      renderScoutEvents();
+      show(vScout);
+    }
+  }
+
+  loginBtn.addEventListener('click', login);
+  loginUser.addEventListener('keydown', (e)=>{ if(e.key==='Enter') login(); });
+  loginPass.addEventListener('keydown', (e)=>{ if(e.key==='Enter') login(); });
+
+  // Offline continue: use last saved session without hitting /api
+  offlineBtn.addEventListener('click', ()=>{
+    const s = loadSession();
+    if(!s){ loginMsg.textContent='No prior session found on this device.'; return; }
+    routeByRole(false);
+  });
+
+  logout1.addEventListener('click', ()=>{ clearSession(); show(vLogin); });
+  logout2.addEventListener('click', ()=>{ clearSession(); show(vLogin); });
+
+  // ---------- SCOUT: tabs + history ----------
+  scoutTabs.addEventListener('click', (e)=>{
+    const t = e.target.closest('.tab'); if(!t) return;
+    const s = loadSession();
+    const tab = t.dataset.tab;
+
+    // If ADMIN somehow clicks Scout tabs (from shared logger), go back to Admin view
+    if (s?.role === 'admin' && tab === 'history') { show(vAdmin); return; }
+
+    scoutTabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    panelHistory.classList.toggle('hidden', tab!=='history');
+    panelNew.classList.toggle('hidden', tab!=='new');
+    if (tab === 'new') initLoggerOnce(); // boot logger when opening
+  });
+
+  function renderScoutEvents(){
+    const s = loadSession(); if(!s) return;
+    const KS = keysFor(s.username);
+    const events = load(KS.events, []);
+    const tb = scoutEventsTable.querySelector('tbody');
+    tb.innerHTML = '';
+    if(!events.length){
+      const tr=document.createElement('tr'); tr.innerHTML='<td colspan="5" class="hint">No events yet.</td>'; tb.appendChild(tr); return;
+    }
+    events.forEach(ev=>{
+      const tr = document.createElement('tr');
+      const pitchCount = ev.pitches?.length || 0;
+      tr.innerHTML = `
+        <td>${ev.date||''}</td>
+        <td>${ev.name||''}</td>
+        <td>${ev.location||''}</td>
+        <td>${pitchCount}</td>
+        <td><button class="ghost" data-csv="${ev.id}">Download CSV</button></td>
+      `;
+      tb.appendChild(tr);
+    });
+    // hook CSV buttons
+    tb.querySelectorAll('button[data-csv]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-csv');
+        const s = loadSession(); const KS = keysFor(s.username);
+        const events = load(KS.events, []);
+        const ev = events.find(e => String(e.id) === String(id));
+        if(!ev) return;
+        downloadEventCSV(ev);
+      });
+    });
+  }
+  scoutRefresh.addEventListener('click', renderScoutEvents);
+
+  // ---------- ADMIN: tabs + scout picker + events ----------
+  adminTabs.addEventListener('click', (e)=>{
+    const t = e.target.closest('.tab'); if(!t) return;
+    adminTabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const tab = t.dataset.tab;
+    adminScouts.classList.toggle('hidden', tab!=='scouts');
+    adminNew.classList.toggle('hidden', tab!=='new');
+    if (tab === 'new') { initLoggerOnce(true); } // admin logger
+  });
+
+  backToAdminBtn.addEventListener('click', ()=> show(vAdmin));
+
+  // Static list of usernames (from your server list) to populate picker
+  const ALL_SCOUT_USERNAMES = [
+    "faffanis","malvarez","mberumen","fbreton","scabral","jcabrera","jcalderon","pciriaco","tclaus","jcruz","rcubillan","jdavis","jfitzpatrick","egomez","mgroopman","jhernandez","jkaregeannes","jkim","mlaureano","llin","wlobo","kmatsumoto","emedina","amejia","rmendoza","rmora","cmorillo","rmotooka","enanita","dneuman","cocando","rpino","eramirez","arequena","hrincones","mrodriguez","eromero","rsaggiadi","lsambo","gschilz","czamora"
+  ];
+
+  function populateScoutPicker(){
+    scoutPicker.innerHTML='';
+    const opt0=document.createElement('option'); opt0.value=''; opt0.textContent='— Select a scout —'; scoutPicker.appendChild(opt0);
+    ALL_SCOUT_USERNAMES.sort().forEach(u=>{
+      const o=document.createElement('option'); o.value=u; o.textContent=u; scoutPicker.appendChild(o);
+    });
+    selScoutHint.textContent = 'No scout selected.';
+    adminEventsTable.querySelector('tbody').innerHTML = '<tr><td colspan="5" class="hint">Pick a scout to view events.</td></tr>';
+  }
+
+  function renderAdminScoutEvents(username){
+    const KS = keysFor(username);
+    const events = load(KS.events, []);
+    selScoutHint.textContent = `Viewing ${username} — ${events.length} event${events.length===1?'':'s'}`;
+    const tb = adminEventsTable.querySelector('tbody');
+    tb.innerHTML='';
+    if(!events.length){ tb.innerHTML='<tr><td colspan="5" class="hint">No events for this scout.</td></tr>'; return; }
+    events.forEach(ev=>{
+      const tr = document.createElement('tr');
+      const pitchCount = ev.pitches?.length || 0;
+      tr.innerHTML = `
+        <td>${ev.date||''}</td>
+        <td>${ev.name||''}</td>
+        <td>${ev.location||''}</td>
+        <td>${pitchCount}</td>
+        <td><button class="ghost" data-csv="${ev.id}" data-user="${username}">Download CSV</button></td>
+      `;
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('button[data-csv]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-csv');
+        const user = btn.getAttribute('data-user');
+        const KS2 = keysFor(user);
+        const events2 = load(KS2.events, []);
+        const ev = events2.find(e => String(e.id) === String(id));
+        if(!ev) return;
+        downloadEventCSV(ev);
+      });
+    });
+  }
+
+  scoutPicker.addEventListener('change', ()=>{
+    const u = scoutPicker.value;
+    if(!u){ selScoutHint.textContent='No scout selected.'; adminEventsTable.querySelector('tbody').innerHTML='<tr><td colspan="5" class="hint">Pick a scout to view events.</td></tr>'; return; }
+    renderAdminScoutEvents(u);
+  });
+  adminRefresh.addEventListener('click', ()=>{ const u=scoutPicker.value; if(u) renderAdminScoutEvents(u); });
+
+  // ---------- LOGGER (mounts in Scout New and Admin New) ----------
   let loggerBooted = false;
-  function initLoggerOnce(){
-    if (loggerBooted) return; loggerBooted = true;
-    const user = getUser();
-    const K_PLAYERS = keyPlayers(user), K_PITCHES = keyPitches(user), K_EVENTS = keyEvents(user);
 
-    let players = loadJSON(K_PLAYERS, []);
-    let pitches = loadJSON(K_PITCHES, []);
+  function initLoggerOnce(forAdmin=false){
+    if(loggerBooted) return;
+    loggerBooted = true;
 
-    // Defaults
-    roleSeg.querySelector('button[data-role="batter"]').classList.add('active');
+    const session = loadSession() || {};
+    const user = session?.username || 'guest';
+    const KS = keysFor(user);
 
-    // Segment handlers
+    // state
+    let players = load(KS.players, []);
+    let pitches = load(KS.pitches, []);
+
+    // elements (scout-new area)
+    const roleSeg = byId('roleSeg');
+    const zoneSeg = byId('zoneSeg');
+    const actionSeg = byId('actionSeg');
+    const typeSeg = byId('pitchTypeSeg');
+    const playerName = byId('playerName');
+    const addPlayerBtn = byId('addPlayerBtn');
+    const pitcherSelect = byId('pitcherSelect');
+    const batterSelect = byId('batterSelect');
+    const velo = byId('velo'), spin = byId('spin');
+    const veloBox = byId('veloBox'), spinBox = byId('spinBox');
+    const submitPitchBtn = byId('submitPitchBtn');
+    const missPitchBtn = byId('missPitchBtn');
+    const pitchTableBody = document.querySelector('#pitchTable tbody');
+    const countHint = byId('countHint');
+
+    const submitEventOpenBtn = byId('submitEventOpenBtn');
+    const eventSection = byId('eventSection');
+    const eventDate = byId('eventDate');
+    const scoutName = byId('scoutName');
+    const eventName = byId('eventName');
+    const eventLocation = byId('eventLocation');
+    const finalSubmitBtn = byId('finalSubmitBtn');
+    const eventMsg = byId('eventMsg');
+
+    // segment buttons
+    function setActive(seg,btn){ seg.querySelectorAll('button').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
+    function clearActive(seg){ seg.querySelectorAll('button').forEach(b=>b.classList.remove('active')); }
     roleSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(roleSeg, e.target); });
     zoneSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(zoneSeg, e.target); });
     actionSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(actionSeg, e.target); });
-    pitchTypeSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(pitchTypeSeg, e.target); });
+    typeSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(typeSeg, e.target); });
+    roleSeg.querySelector('button[data-role="batter"]').classList.add('active');
 
-    // Slider sync
+    // slider <-> input sync
+    function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
     function sliderToBox(){ veloBox.value = (Number(velo.value)===0 ? '' : String(velo.value)); spinBox.value = (Number(spin.value)===0 ? '' : String(spin.value)); }
     function commitVelo(){ const v=veloBox.value.trim(); velo.value = (v===''||v.toUpperCase()==='NA') ? 0 : clamp(parseInt(v)||0,0,105); sliderToBox(); }
     function commitSpin(){ const v=spinBox.value.trim(); spin.value = (v===''||v.toUpperCase()==='NA') ? 0 : clamp(parseInt(v)||0,0,4000); sliderToBox(); }
     velo.addEventListener('input', sliderToBox); spin.addEventListener('input', sliderToBox);
-    veloBox.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitVelo(); veloBox.blur(); }});
-    spinBox.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitSpin(); spinBox.blur(); }});
-    veloBox.addEventListener('change', commitVelo); spinBox.addEventListener('change', commitSpin);
+    veloBox.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitVelo(); veloBox.blur(); }}); veloBox.addEventListener('change', commitVelo);
+    spinBox.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitSpin(); spinBox.blur(); }}); spinBox.addEventListener('change', commitSpin);
     sliderToBox();
 
-    // Players
+    // players
     function refreshSelects(){
       pitcherSelect.innerHTML=''; batterSelect.innerHTML='';
       const pitchers = players.filter(p=>p.role==='pitcher'||p.role==='dual').map(p=>p.name).sort((a,b)=>a.localeCompare(b));
       const batters  = players.filter(p=>p.role==='batter'||p.role==='dual').map(p=>p.name).sort((a,b)=>a.localeCompare(b));
+      const addOption=(sel, txt)=>{ const o=document.createElement('option'); o.text=txt; o.value=txt; sel.add(o); };
       if(!pitchers.length) addOption(pitcherSelect,'— add a Pitcher —'); pitchers.forEach(n=>addOption(pitcherSelect,n));
       if(!batters.length)  addOption(batterSelect,'— add a Hitter —');  batters.forEach(n=>addOption(batterSelect,n));
     }
-    function addPlayer(){ const name=(playerNameInput.value||'').trim(); const role=getActiveVal(roleSeg)||'batter'; if(!name){ alert('Enter "Last, First"'); return; } players.push({name,role}); saveJSON(K_PLAYERS,players); playerNameInput.value=''; refreshSelects(); }
+    function addPlayer(){
+      const name=(playerName.value||'').trim();
+      const role=roleSeg.querySelector('.active')?.dataset.role||'batter';
+      if(!name){ alert('Enter "Last, First"'); return; }
+      players.push({name,role}); save(KS.players,players); playerName.value=''; refreshSelects();
+    }
     addPlayerBtn.addEventListener('click', addPlayer);
 
-    // Table
+    // utilities
+    function getActiveVal(seg){ const b=seg.querySelector('button.active'); return b ? (b.dataset.val || b.dataset.role) : ''; }
+    function resetPitchForm(){ clearActive(zoneSeg); clearActive(actionSeg); clearActive(typeSeg); velo.value=0; spin.value=0; sliderToBox(); }
+
+    // table render/edit/delete
     function renderTable(){
       pitchTableBody.innerHTML='';
       pitches.forEach((r,idx)=>{
         const tr=document.createElement('tr'); tr.dataset.index=idx;
         tr.innerHTML = `
-          <td>${r.time||''}</td><td>${r.pitcher||''}</td><td>${r.hitter||''}</td><td>${r.zone||''}</td><td>${r.action||''}</td><td>${r.pitchType||''}</td><td>${r.velo??''}</td><td>${r.spin??''}</td>
+          <td>${r.time||''}</td><td>${r.pitcher||''}</td><td>${r.hitter||''}</td>
+          <td>${r.zone||''}</td><td>${r.action||''}</td><td>${r.pitchType||''}</td>
+          <td>${r.velo??''}</td><td>${r.spin??''}</td>
           <td><div class="cell-actions">
             <button class="icon-btn edit-btn" title="Edit row"><svg width="18" height="18"><use href="#ico-edit"/></svg></button>
-            <button class="icon-btn del-btn" title="Delete pitch"><svg width="18" height="18"><use href="#ico-x"/></svg></button>
+            <button class="icon-btn del-btn" title="Delete"><svg width="18" height="18"><use href="#ico-x"/></svg></button>
           </div></td>`;
         pitchTableBody.appendChild(tr);
       });
       countHint.textContent = `${pitches.length} ${pitches.length===1?'pitch':'pitches'}`;
     }
-    function getSelections(){
-      const pitcher=pitcherSelect.value, hitter=batterSelect.value;
-      if(!pitcher||pitcher.startsWith('—')){ alert('Select a PITCHER.'); return null; }
-      if(!hitter ||hitter.startsWith('—')){ alert('Select a HITTER.');  return null; }
-      return {pitcher,hitter};
-    }
-    function resetPitchForm(){ clearActive(zoneSeg); clearActive(actionSeg); clearActive(pitchTypeSeg); velo.value=0; spin.value=0; sliderToBox(); }
 
-    function submitPitch(){
-      const sel=getSelections(); if(!sel) return;
-      const row={ time:nowStamp(), pitcher:sel.pitcher, hitter:sel.hitter, zone:getActiveVal(zoneSeg)||'', action:getActiveVal(actionSeg)||'', pitchType:getActiveVal(pitchTypeSeg)||'', velo:Number(velo.value)===0?'':Number(velo.value), spin:Number(spin.value)===0?'':Number(spin.value) };
-      pitches.push(row); saveJSON(K_PITCHES,pitches); renderTable(); submitPitchBtn.textContent='Logged ✓'; setTimeout(()=> submitPitchBtn.textContent='Submit Pitch',500); resetPitchForm();
-    }
-    function missPitch(){
-      const sel=getSelections(); if(!sel) return;
-      const row={ time:nowStamp(), pitcher:sel.pitcher, hitter:sel.hitter, zone:'', action:'', pitchType:'', velo:'', spin:'' };
-      pitches.push(row); saveJSON(K_PITCHES,pitches); renderTable(); missPitchBtn.textContent='Miss Logged ✓'; setTimeout(()=> missPitchBtn.textContent='Miss Pitch',500); resetPitchForm();
-    }
-    submitPitchBtn.addEventListener('click', submitPitch);
-    missPitchBtn.addEventListener('click', missPitch);
-
-    // inline edit/delete
-    const ACTIONS=['TAKE','S/M','FOUL','BIP','HBP'], PITCH_TYPES=['FB','CB','SL','CH','OTHER','SF','SI'], ZONES=['IN','OUT'];
+    const ACTIONS=['TAKE','S/M','FOUL','BIP','HBP'], PITCH_TYPES=['FB','CB','SL','CH','SF','SI','OTHER'], ZONES=['IN','OUT'];
     function makeSelect(options,val){ const sel=document.createElement('select'); sel.className='cell-select'; const empty=document.createElement('option'); empty.value=''; empty.textContent=''; sel.appendChild(empty); options.forEach(o=>{ const op=document.createElement('option'); op.value=o; op.textContent=o; if(o===val) op.selected=true; sel.appendChild(op); }); return sel; }
     function makeInput(val){ const i=document.createElement('input'); i.type='text'; i.className='cell-input'; i.value=(val??''); return i; }
     function makePlayerSelect(list,current){ const sel=document.createElement('select'); sel.className='cell-select'; const set=new Set(list); if(current && !set.has(current)) list=[current,...list]; const empty=document.createElement('option'); empty.value=''; empty.textContent=''; sel.appendChild(empty); list.forEach(name=>{ const op=document.createElement('option'); op.value=name; op.textContent=name; if(name===current) op.selected=true; sel.appendChild(op); }); return sel; }
 
-    pitchTableBody.addEventListener('click', (e)=>{
+    document.querySelector('#pitchTable tbody').addEventListener('click', (e)=>{
       const del=e.target.closest('.del-btn');
-      if(del){ const tr=e.target.closest('tr'); const idx=Number(tr.dataset.index); if(confirm('Delete this pitch?')){ pitches.splice(idx,1); saveJSON(K_PITCHES,pitches); renderTable(); } return; }
-      const btn=e.target.closest('.edit-btn'); if(!btn) return;
-      const tr=e.target.closest('tr'); const idx=Number(tr.dataset.index); const r=pitches[idx]; if(tr.classList.contains('editing')) return; tr.classList.add('editing');
+      if(del){ const tr=e.target.closest('tr'); const idx=Number(tr.dataset.index); if(confirm('Delete this pitch?')){ pitches.splice(idx,1); save(KS.pitches,pitches); renderTable(); } return; }
+      const btn=e.target.closest('.edit-btn'); if(!btn) return; const tr=e.target.closest('tr'); const idx=Number(tr.dataset.index); const r=pitches[idx]; if(tr.classList.contains('editing')) return; tr.classList.add('editing');
       const tds=tr.querySelectorAll('td'); const tdPitcher=tds[1], tdHitter=tds[2], tdZone=tds[3], tdAction=tds[4], tdType=tds[5], tdVelo=tds[6], tdSpin=tds[7], tdEdit=tds[8];
       const pitchers=players.filter(p=>p.role==='pitcher'||p.role==='dual').map(p=>p.name).sort((a,b)=>a.localeCompare(b));
       const batters=players.filter(p=>p.role==='batter'||p.role==='dual').map(p=>p.name).sort((a,b)=>a.localeCompare(b));
       const selZone=makeSelect(ZONES,r.zone||''); const selAction=makeSelect(ACTIONS,r.action||''); const selType=makeSelect(PITCH_TYPES,r.pitchType||''); const selPitcher=makePlayerSelect(pitchers,r.pitcher||''); const selHitter=makePlayerSelect(batters,r.hitter||''); const inVelo=makeInput(r.velo); const inSpin=makeInput(r.spin);
-      tdPitcher.innerHTML=''; tdPitcher.appendChild(selPitcher);
-      tdHitter.innerHTML=''; tdHitter.appendChild(selHitter);
-      tdZone.innerHTML=''; tdZone.appendChild(selZone);
-      tdAction.innerHTML=''; tdAction.appendChild(selAction);
-      tdType.innerHTML=''; tdType.appendChild(selType);
-      tdVelo.innerHTML=''; tdVelo.appendChild(inVelo);
-      tdSpin.innerHTML=''; tdSpin.appendChild(inSpin);
-      tdEdit.innerHTML='';
-      const saveBtn=document.createElement('button'); saveBtn.className='icon-btn'; saveBtn.title='Save'; saveBtn.innerHTML='<svg width="18" height="18"><use href="#ico-check"/></svg>';
-      const cancelBtn=document.createElement('button'); cancelBtn.className='icon-btn'; cancelBtn.title='Cancel'; cancelBtn.innerHTML='<svg width="18" height="18"><use href="#ico-x"/></svg>';
-      tdEdit.appendChild(saveBtn); tdEdit.appendChild(cancelBtn);
-      saveBtn.addEventListener('click', ()=>{ r.pitcher=selPitcher.value.trim(); r.hitter=selHitter.value.trim(); r.zone=selZone.value||''; r.action=selAction.value||''; r.pitchType=selType.value||''; r.velo=inVelo.value.trim(); r.spin=inSpin.value.trim(); saveJSON(K_PITCHES,pitches); tr.classList.remove('editing'); renderTable(); });
+      tdPitcher.innerHTML=''; tdPitcher.appendChild(selPitcher); tdHitter.innerHTML=''; tdHitter.appendChild(selHitter); tdZone.innerHTML=''; tdZone.appendChild(selZone); tdAction.innerHTML=''; tdAction.appendChild(selAction); tdType.innerHTML=''; tdType.appendChild(selType); tdVelo.innerHTML=''; tdVelo.appendChild(inVelo); tdSpin.innerHTML=''; tdSpin.appendChild(inSpin);
+      tdEdit.innerHTML=''; const saveBtn=document.createElement('button'); saveBtn.className='icon-btn'; saveBtn.title='Save'; saveBtn.innerHTML='<svg width="18" height="18"><use href="#ico-check"/></svg>'; const cancelBtn=document.createElement('button'); cancelBtn.className='icon-btn'; cancelBtn.title='Cancel'; cancelBtn.innerHTML='<svg width="18" height="18"><use href="#ico-x"/></svg>'; tdEdit.appendChild(saveBtn); tdEdit.appendChild(cancelBtn);
+      saveBtn.addEventListener('click', ()=>{ r.pitcher=selPitcher.value.trim(); r.hitter=selHitter.value.trim(); r.zone=selZone.value||''; r.action=selAction.value||''; r.pitchType=selType.value||''; r.velo=inVelo.value.trim(); r.spin=inSpin.value.trim(); save(KS.pitches,pitches); tr.classList.remove('editing'); renderTable(); });
       cancelBtn.addEventListener('click', ()=>{ tr.classList.remove('editing'); renderTable(); });
     });
 
-    // DSP teams
-    function populateTeamChecks(container){
-      container.innerHTML='';
-      MLB_TEAMS.forEach(t=>{
-        const label=document.createElement('label');
-        label.className='team-chip';
-        const cb=document.createElement('input');
-        cb.type='checkbox'; cb.value=t;
-        label.appendChild(cb);
-        const txt=document.createElement('span'); txt.textContent=t; label.appendChild(txt);
-        container.appendChild(label);
-      });
+    function getSelections(){
+      const pitcher=pitcherSelect.value, hitter=batterSelect.value;
+      if(!pitcher || pitcher.startsWith('—')){ alert('Select a PITCHER.'); return null; }
+      if(!hitter  || hitter.startsWith('—')){ alert('Select a HITTER.');  return null; }
+      return {pitcher,hitter};
     }
-    populateTeamChecks(blastTeams);
-    populateTeamChecks(trackmanTeams);
+    function submitPitch(){
+      const sel=getSelections(); if(!sel) return;
+      const row = {
+        time: nowStamp(),
+        pitcher: sel.pitcher,
+        hitter: sel.hitter,
+        zone: getActiveVal(zoneSeg)||'',
+        action: getActiveVal(actionSeg)||'',
+        pitchType: getActiveVal(typeSeg)||'',
+        velo: Number(velo.value)||'',
+        spin: Number(spin.value)||''
+      };
+      pitches.push(row); save(KS.pitches,pitches); renderTable(); submitPitchBtn.textContent='Logged ✓'; setTimeout(()=> submitPitchBtn.textContent='Submit Pitch',500); resetPitchForm();
+    }
+    function missPitch(){
+      const sel=getSelections(); if(!sel) return;
+      const row = { time: nowStamp(), pitcher: sel.pitcher, hitter: sel.hitter, zone:'', action:'', pitchType:'', velo:'', spin:'' };
+      pitches.push(row); save(KS.pitches,pitches); renderTable(); missPitchBtn.textContent='Miss Logged ✓'; setTimeout(()=> missPitchBtn.textContent='Miss Pitch',500); resetPitchForm();
+    }
+    submitPitchBtn.addEventListener('click', submitPitch);
+    missPitchBtn.addEventListener('click', missPitch);
 
+    // event submit flow (creates an "event" object from current pitches)
     submitEventOpenBtn.addEventListener('click', ()=>{
-      eventSection.style.display='block';
-      eventDate.value=todayMDY();
-      eventMsg.innerHTML='';
-      dspToggle.classList.remove('active'); dspToggle.textContent='No'; dspToggle.setAttribute('aria-pressed','false');
-      dspChecklist.classList.remove('show');
-      ckBlast.checked=false; blastTeamWrap.style.display='none';
-      ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
-      eventSection.scrollIntoView({behavior:'smooth'});
+      eventSection.classList.remove('hidden');
+      eventDate.value = todayMDY();
+      eventMsg.innerHTML = '';
+      scoutName.value = session.fullName || session.username || '';
+      eventSection.scrollIntoView({ behavior:'smooth' });
     });
-    dspToggle.addEventListener('click', ()=>{
-      const active=dspToggle.classList.toggle('active');
-      dspToggle.textContent=active?'Yes':'No';
-      dspToggle.setAttribute('aria-pressed', String(active));
-      if(active){ dspChecklist.classList.add('show'); } else { dspChecklist.classList.remove('show'); }
-    });
-    ckBlast.addEventListener('change', e=>{ blastTeamWrap.style.display = e.target.checked ? 'block' : 'none'; });
-    ckTrackman.addEventListener('change', e=>{ trackmanTeamWrap.style.display = e.target.checked ? 'block' : 'none'; });
-
-    // Save Event -> History
-    function eventCSVRows(event){
-      return event.rows.map(r => ({
-        date: event.date,
-        event: event.name,
-        location: event.location,
-        scout: event.scout,
-        time: r.time,
-        pitcher: r.pitcher,
-        hitter: r.hitter,
-        zone: r.zone,
-        action: r.action,
-        pitchType: r.pitchType,
-        velo: r.velo,
-        spin: r.spin
-      }));
-    }
 
     finalSubmitBtn.addEventListener('click', ()=>{
-      const s = loadSession() || {};
-      const user = s.username || 'guest';
-      const K_EVENTS = keyEvents(user), K_PITCHES = keyPitches(user), K_PLAYERS = keyPlayers(user);
+      const name=(eventName.value||'').trim();
+      const location=(eventLocation.value||'').trim();
+      if(!name){ alert('Enter Event Name'); return; }
+      if(pitches.length===0){ alert('No pitches logged'); return; }
 
-      const name = (eventName.value||'').trim() || 'Untitled';
-      const date = (eventDate.value||todayMDY()).trim();
-      const location = (eventLocation.value||'').trim();
-      const scout = (scoutName.value||s.fullName||user).trim();
+      // create and save event
+      const ev = {
+        id: Date.now(), // simple id
+        date: eventDate.value || todayMDY(),
+        scout: scoutName.value || session.username,
+        name, location,
+        pitches: pitches.slice()
+      };
+      const events = load(KS.events, []);
+      events.push(ev); save(KS.events, events);
 
-      const rows = loadJSON(K_PITCHES, []);
-      if (!rows.length){ eventMsg.innerHTML='<div class="success warn">No pitches to save.</div>'; return; }
-
-      // DSP meta
-      const dsp = dspToggle.classList.contains('active');
-      const blast = ckBlast.checked ? Array.from(blastTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
-      const trackman = ckTrackman.checked ? Array.from(trackmanTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
-
-      const evts = loadJSON(K_EVENTS, []);
-      evts.push({
-        id: Date.now(),
-        user,
-        name,
-        date,
-        location,
-        scout,
-        count: rows.length,
-        rows: rows.slice(),
-        dsp, blast, trackman
-      });
-      saveJSON(K_EVENTS, evts);
-
-      // Clear working sets
-      saveJSON(K_PITCHES, []);
-      saveJSON(K_PLAYERS, []);
-      players = []; pitches = [];
-      playerNameInput.value=''; eventName.value=''; eventLocation.value=''; scoutName.value='';
+      // clear logger state
+      pitches = []; players = [];
+      save(KS.pitches, pitches); save(KS.players, players);
       refreshSelects(); renderTable();
-      ckBlast.checked=false; blastTeamWrap.style.display='none'; ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
-      dspToggle.classList.remove('active'); dspToggle.textContent='No'; dspChecklist.classList.remove('show');
-      eventMsg.innerHTML='<div class="success">Event submitted. Saved to History & cleared current log.</div>';
-      renderEventsTable();
-      setTimeout(()=>{ eventSection.style.display='none'; }, 1200);
+
+      // UX
+      eventMsg.innerHTML = '<div class="success">Event submitted. Log and players cleared.</div>';
+      setTimeout(()=>{ eventSection.classList.add('hidden'); eventName.value=''; eventLocation.value=''; }, 1000);
+
+      // update history if scout
+      const s=loadSession(); if(s?.role==='scout'){ renderScoutEvents(); }
     });
 
-    // initial
+    // first paint
     refreshSelects(); renderTable();
   }
 
-  // ---------- History rendering + CSV ----------
-  function renderEventsTable(){
-    const s = loadSession() || {};
-    const user = s.username || 'guest';
-    const K_EVENTS = keyEvents(user);
-    const evts = loadJSON(K_EVENTS, []);
-    eventsTableBody.innerHTML = '';
-    if (!evts.length){ eventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">No events yet.</td></tr>`; return; }
-    evts.sort((a,b)=> b.id - a.id).forEach(e=>{
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${e.date}</td>
-        <td>${e.name}</td>
-        <td>${e.location||''}</td>
-        <td>${e.scout||''}</td>
-        <td>${e.count}</td>
-        <td class="cell-actions">
-          <button class="ghost" data-action="csv" data-id="${e.id}">CSV</button>
-          <button class="ghost" data-action="open" data-id="${e.id}">Open</button>
-          <button class="ghost" data-action="del" data-id="${e.id}">Delete</button>
-        </td>`;
-      eventsTableBody.appendChild(tr);
+  // CSV download for an event
+  function downloadEventCSV(ev){
+    const lines = [];
+    lines.push(`Date,${csv(ev.date)},Scout,${csv(ev.scout)}`);
+    lines.push(`Event,${csv(ev.name)},Location,${csv(ev.location)}`);
+    lines.push('');
+    lines.push('Time,Pitcher,Hitter,Zone,Action,Pitch Type,Velo,Spin');
+    (ev.pitches||[]).forEach(p=>{
+      lines.push([
+        csv(p.time), csv(p.pitcher), csv(p.hitter),
+        csv(p.zone), csv(p.action), csv(p.pitchType),
+        csv(p.velo), csv(p.spin)
+      ].join(','));
     });
-    eventsTableBody.querySelectorAll('button').forEach(b=>{
-      b.addEventListener('click', ()=>{
-        const s = loadSession() || {};
-        const user = s.username || 'guest';
-        const K_EVENTS = keyEvents(user), K_PITCHES = keyPitches(user);
-        const id = Number(b.dataset.id), action = b.dataset.action;
-        const list = loadJSON(K_EVENTS, []);
-        const idx = list.findIndex(x=>x.id===id);
-        if (idx<0) return;
-        const e = list[idx];
-        if (action==='csv'){
-          const headers = ['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
-          const rows = e.rows.map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin}));
-          download(`${e.date} ${e.name}.csv`, toCSV(rows, headers));
-        }
-        if (action==='open'){
-          // load into New Event for editing
-          saveJSON(K_PITCHES, e.rows.slice());
-          document.querySelector('[data-tab="new"]').click();
-          window.scrollTo({top:0,behavior:'smooth'});
-        }
-        if (action==='del'){
-          if (confirm('Delete this event?')){
-            list.splice(idx,1); saveJSON(K_EVENTS,list); renderEventsTable();
-          }
-        }
-      });
-    });
+    const blob = new Blob([lines.join('\n')], { type:'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = (ev.name||'event').replace(/[^\w-]+/g,'_');
+    a.href = url; a.download = `${safeName}_${ev.date}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
   }
-  exportAllCsvBtn.addEventListener('click', ()=>{
-    const s = loadSession() || {};
-    const user = s.username || 'guest';
-    const K_EVENTS = keyEvents(user);
-    const evts = loadJSON(K_EVENTS, []);
-    if (!evts.length){ alert('No events to export.'); return; }
-    const headers = ['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
-    const rows = evts.flatMap(e => e.rows.map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin})));
-    download(`${user}-all-events.csv`, toCSV(rows, headers));
-  });
+  function csv(v){ const s = (v==null?'':String(v)); if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`; return s; }
 
-  // ---------- Admin ----------
-  const KNOWN_USERS = [
-    "faffanis","malvarez","mberumen","fbreton","scabral","jcabrera","jcalderon","pciriaco","tclaus","jcruz","rcubillan","jdavis","jfitzpatrick","egomez","mgroopman","jhernandez","jkaregeannes","jkim","mlaureano","llin","wlobo","kmatsumoto","emedina","amejia","rmendoza","rmora","cmorillo","rmotooka","enanita","dneuman","cocando","rpino","eramirez","arequena","hrincones","mrodriguez","eromero","rsaggiadi","lsambo","gschilz","czamora","mcuellar","cschneider","isecairacotto"
-  ];
-  function initAdminUI(){
-    // populate list once
-    if (!adminScoutSelect.dataset.ready){
-      adminScoutSelect.innerHTML=''; const add=(v,t)=>{ const o=document.createElement('option'); o.value=v; o.text=t; adminScoutSelect.add(o); };
-      add('', '— select scout —'); KNOWN_USERS.forEach(u=> add(u,u));
-      adminScoutSelect.dataset.ready='1';
-    }
-  }
-  function adminListEventsFor(user){
-    const evts = loadJSON(keyEvents(user), []);
-    adminEventsTableBody.innerHTML='';
-    if (!evts.length){
-      adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">No local events for ${user}.</td></tr>`;
-      return;
-    }
-    evts.sort((a,b)=> b.id - a.id).forEach(e=>{
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${e.date}</td>
-        <td>${e.name}</td>
-        <td>${e.location||''}</td>
-        <td>${e.scout||''}</td>
-        <td>${e.count}</td>
-        <td class="cell-actions">
-          <button class="ghost" data-action="csv" data-id="${e.id}">CSV</button>
-          <button class="ghost" data-action="open" data-id="${e.id}">Open</button>
-          <button class="ghost" data-action="del" data-id="${e.id}">Delete</button>
-        </td>`;
-      adminEventsTableBody.appendChild(tr);
-    });
-    adminEventsTableBody.querySelectorAll('button').forEach(b=>{
-      b.addEventListener('click', ()=>{
-        const id = Number(b.dataset.id), action=b.dataset.action;
-        const list = loadJSON(keyEvents(user), []);
-        const idx = list.findIndex(x=>x.id===id); if (idx<0) return;
-        const e = list[idx];
-        if (action==='csv'){
-          const headers = ['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
-          const rows = e.rows.map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin}));
-          download(`${user} - ${e.date} ${e.name}.csv`, toCSV(rows, headers));
-        }
-        if (action==='del'){
-          if (confirm(`Delete ${e.name}?`)){ list.splice(idx,1); saveJSON(keyEvents(user), list); adminListEventsFor(user); }
-        }
-        if (action==='open'){
-          const s = loadSession(); if (!s){ alert('Please log in first.'); return; }
-          saveJSON(keyPitches(s.username), e.rows.slice());
-          // jump to New Event UI (so admin sees the form, not an empty tab)
-          show(vScout);
-          document.querySelector('[data-tab="new"]').click();
-          window.scrollTo({top:0,behavior:'smooth'});
-        }
-      });
-    });
-  }
-  adminScoutsTab.addEventListener('click', ()=>{
-    adminScoutsTab.classList.add('active'); adminNewTab.classList.remove('active');
-    adminScoutsView.classList.remove('hidden'); adminNewView.classList.add('hidden');
-  });
-  adminNewTab.addEventListener('click', ()=>{
-    adminNewTab.classList.add('active'); adminScoutsTab.classList.remove('active');
-    adminScoutsView.classList.add('hidden'); adminNewView.classList.remove('hidden');
-    // Instead of an empty admin tab, automatically open the same New Event UI
-    show(vScout);
-    document.querySelector('[data-tab="new"]').click();
-    window.scrollTo({top:0,behavior:'smooth'});
-  });
-  adminScoutSelect.addEventListener('change', ()=>{
-    const u = adminScoutSelect.value;
-    if (!u) { adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">Pick a scout to view their local history.</td></tr>`; return; }
-    adminListEventsFor(u);
-  });
-  adminExportAllBtn.addEventListener('click', ()=>{
-    const u = adminScoutSelect.value; if (!u){ alert('Pick a scout first'); return; }
-    const evts = loadJSON(keyEvents(u), []); if (!evts.length){ alert(`No events for ${u}`); return; }
-    const headers = ['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
-    const rows = evts.flatMap(e => e.rows.map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin})));
-    download(`${u}-all-events.csv`, toCSV(rows, headers));
-  });
-
-  // ---------- Boot ----------
-  document.getElementById('topbar').textContent='';
-  routeByRole();
+  // boot
+  routeByRole(false);
 })();
 </script>
 </body>
