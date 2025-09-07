@@ -4,6 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Scout Logger</title>
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#13294B">
+
 <style>
   :root{
     --red:#D22630; --navy:#13294B; --bg:#f7f7fb; --ink:#1f2430; --muted:#6d7280;
@@ -73,6 +77,7 @@
       </div>
       <div class="row" style="margin-top:10px">
         <button id="loginBtn" class="primary">Sign in</button>
+        <button id="offlineBtn" class="btn" type="button">Continue Offline</button>
         <span id="loginMsg" class="hint"></span>
       </div>
     </section>
@@ -291,6 +296,9 @@
 <script>
     
 (function(){
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(console.error);
+  }
   // Offline SW (inline)
   if ('serviceWorker' in navigator) {
     const sw = `
@@ -313,6 +321,8 @@
   const loginPass = document.getElementById('loginPass');
   const loginBtn  = document.getElementById('loginBtn');
   const loginMsg  = document.getElementById('loginMsg');
+  const offlineBtn = $('#offlineBtn');
+
 
   const whoami = document.getElementById('whoami');
   const adminWhoami = document.getElementById('adminWhoami');
@@ -422,6 +432,15 @@ logout2.addEventListener('click', ()=>{
   loggerBooted = false;   // reset logger when logging out
   routeByRole();
 });
+
+  offlineBtn.addEventListener('click', ()=>{
+    const s = loadSession();
+    if (!s) {
+      loginMsg.textContent = 'No prior session found on this device.';
+      return;
+    }
+    routeByRole(); // sends you to admin or scout view using stored session
+  });
 
   // ---------- Scout Tabs ----------
   scoutTabs.addEventListener('click', (e)=>{
