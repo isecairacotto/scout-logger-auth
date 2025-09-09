@@ -326,6 +326,34 @@ if(!res.ok){
 }
 const data = await res.json();
 
+// Normal online login
+try{
+  const res = await fetch(API + '/api/login', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+
+  // 👇 Guard: if server returns HTML (e.g., index.html), treat as failure
+  const ctype = (res.headers.get('content-type') || '').toLowerCase();
+  if (!ctype.includes('application/json')) {
+    throw new Error('Non-JSON response');
+  }
+
+  if(!res.ok){
+    loginMsg.textContent = 'Invalid credentials';
+    return;
+  }
+  const data = await res.json();
+  saveSession({ token: data.token, role: data.role, fullName: data.fullName, username });
+  routeByRole();
+}catch{
+  // If network fails mid-login, still let them in as local mode
+  loginMsg.textContent = 'Network error — using local mode';
+  saveSession({ token: 'local', role: 'scout', fullName: username, username });
+  routeByRole();
+}
+
 // ---------- Install (PWA) ----------
 let deferredPrompt = null;
 const installBtn = document.getElementById('installBtn');
