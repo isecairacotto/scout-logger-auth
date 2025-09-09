@@ -716,6 +716,24 @@ logout2.addEventListener('click', ()=>{
   });
 
   // ---------- Admin ----------
+
+  let newEventOriginalParent = null;
+function mountNewEventIntoAdmin() {
+  const newPanel = document.getElementById('scout-new');
+  if (!newPanel) return;
+  if (!newEventOriginalParent) newEventOriginalParent = newPanel.parentElement; // remember where it came from
+  document.getElementById('adminNewView').appendChild(newPanel);
+  newPanel.classList.remove('hidden');
+  initLoggerOnce(); // ensure the logger UI is initialized once
+}
+
+function unmountNewEventBackToScout() {
+  const newPanel = document.getElementById('scout-new');
+  if (!newPanel || !newEventOriginalParent) return;
+  newEventOriginalParent.appendChild(newPanel);
+  newPanel.classList.add('hidden'); // default hidden when not in use under Scout tabs
+}
+  
   const KNOWN_USERS = [
     "faffanis","malvarez","mberumen","fbreton","scabral","jcabrera","jcalderon","pciriaco","tclaus","jcruz","rcubillan","jdavis","jfitzpatrick","egomez","mgroopman","jhernandez","jkaregeannes","jkim","mlaureano","llin","wlobo","kmatsumoto","emedina","amejia","rmendoza","rmora","cmorillo","rmotooka","enanita","dneuman","cocando","rpino","eramirez","arequena","hrincones","mrodriguez","eromero","rsaggiadi","lsambo","gschilz","czamora","mcuellar","cschneider","isecairacotto"
   ];
@@ -768,24 +786,33 @@ logout2.addEventListener('click', ()=>{
           saveJSON(keyPitches(s.username), e.rows.slice());
           // jump to New Event UI (so admin sees the form, not an empty tab)
           show(vScout);
-          document.querySelector('[data-tab="new"]').click();
+          adminNewTab.classList.add('active'); 
+          adminScoutsTab.classList.remove('active');
+          adminScoutsView.classList.add('hidden'); 
+          adminNewView.classList.remove('hidden');
+          mountNewEventIntoAdmin();
           window.scrollTo({top:0,behavior:'smooth'});
         }
       });
     });
   }
   adminScoutsTab.addEventListener('click', ()=>{
-    adminScoutsTab.classList.add('active'); adminNewTab.classList.remove('active');
-    adminScoutsView.classList.remove('hidden'); adminNewView.classList.add('hidden');
-  });
+  show(vAdmin); // <-- bring admin shell back if we were in scout view
+  adminScoutsTab.classList.add('active'); 
+  adminNewTab.classList.remove('active');
+  adminScoutsView.classList.remove('hidden'); 
+  adminNewView.classList.add('hidden');
+  unmountNewEventBackToScout(); // put New Event panel back under the Scout view
+});
   adminNewTab.addEventListener('click', ()=>{
-    adminNewTab.classList.add('active'); adminScoutsTab.classList.remove('active');
-    adminScoutsView.classList.add('hidden'); adminNewView.classList.remove('hidden');
-    // Instead of an empty admin tab, automatically open the same New Event UI
-    show(vScout);
-    document.querySelector('[data-tab="new"]').click();
-    window.scrollTo({top:0,behavior:'smooth'});
-  });
+  show(vAdmin); // <-- stay inside admin shell
+  adminNewTab.classList.add('active'); 
+  adminScoutsTab.classList.remove('active');
+  adminScoutsView.classList.add('hidden'); 
+  adminNewView.classList.remove('hidden');
+  mountNewEventIntoAdmin(); // show the same New Event UI inside admin tab
+  window.scrollTo({top:0,behavior:'smooth'});
+});
   adminScoutSelect.addEventListener('change', ()=>{
     const u = adminScoutSelect.value;
     if (!u) { adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">Pick a scout to view their local history.</td></tr>`; return; }
