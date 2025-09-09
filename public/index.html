@@ -361,8 +361,6 @@
   function keyPlayers(u){ return `players_${u}` }
   function keyPitches(u){ return `pitches_${u}` } // working set
   function keyEvents(u){  return `events_${u}` }  // saved events
-  function loadJSON(k, fb){ try{ return JSON.parse(localStorage.getItem(k)) ?? fb; }catch{ return fb; } }
-  function saveJSON(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
 
   // ---------- CSV ----------
   function toCSV(rows, headers){
