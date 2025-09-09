@@ -1,5 +1,5 @@
 /// <reference lib="WebWorker" />
-const SW_VERSION = 'v8'; // bump to invalidate old caches
+const SW_VERSION = 'v10'; // bump to invalidate old caches
 const APP_SHELL = [
   '/',               // index.html served here
   '/index.html',
@@ -26,6 +26,20 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
+  const url = new URL(req.url);
+
+  // 🚫 Never cache API calls; go network-only and don't store responses
+  if (url.pathname.startsWith('/api/')) {
+    e.respondWith(
+      fetch(req).catch(() =>
+        new Response(JSON.stringify({ error: 'offline' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      )
+    );
+    return;
+  }
 
   // Navigations: app-shell fallback
   if (req.mode === 'navigate') {
