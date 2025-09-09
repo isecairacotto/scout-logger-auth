@@ -1,38 +1,80 @@
-const CACHE_NAME = 'scout-logger-v1';
+/// <reference lib="WebWorker" />
+const SW_VERSION = 'v5'; // bump to bust old caches
 const APP_SHELL = [
-  '/',
+  '/',                 // make sure your server serves index.html here
   '/index.html',
-  '/manifest.json'
+  '/manifest.webmanifest',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png'
+  // add any other static files you serve (css/js if separate)
 ];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(SW_VERSION).then((cache) => cache.addAll(APP_SHELL))
+  );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.map((k) => (k === CACHE_NAME ? null : caches.delete(k))))
+      Promise.all(keys.map((k) => (k !== SW_VERSION ? caches.delete(k) : null)))
     )
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
+// Network strategy:
+// - Navigations: return cached app shell fallback (offline HTML)
+// - Static files: cache-first
+// - Everything else: try network, fall back to cache
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
 
-  if (url.pathname.startsWith('/api/')) return;
-
-  const isHTMLNav =
-    request.mode === 'navigate' ||
-    (request.headers.get('accept') || '').includes('text/html');
-
-  if (isHTMLNav) {
-    event.respondWith(caches.match('/index.html').then((r) => r || fetch(request)));
+  // 1) Handle navigations (address bar / SPA deep-links)
+  if (req.mode === 'navigate') {
+    e.respondWith(
+      fetch(req).catch(() => caches.match('/index.html'))
+    );
     return;
   }
 
-  event.respondWith(caches.match(request).then((r) => r || fetch(request)));
+  const url = new URL(req.url);
+  const isStatic =
+    url.origin === location.origin &&
+    (url.pathname.endsWith('.png') ||
+     url.pathname.endsWith('.jpg') ||
+     url.pathname.endsWith('.svg') ||
+     url.pathname.endsWith('.webp') ||
+     url.pathname.endsWith('.ico') ||
+     url.pathname.endsWith('.css') ||
+     url.pathname.endsWith('.js') ||
+     url.pathname === '/');
+
+  // 2) Static assets: cache-first
+  if (isStatic) {
+    e.respondWith(
+      caches.match(req).then((cached) =>
+        cached ||
+        fetch(req).then((res) => {
+          const copy = res.clone();
+          caches.open(SW_VERSION).then((c) => c.put(req, copy));
+          return res;
+        }).catch(() => caches.match('/index.html'))
+      )
+    );
+    return;
+  }
+
+  // 3) Default: network-first, fallback to cache
+  e.respondWith(
+    fetch(req)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(SW_VERSION).then((c) => c.put(req, copy));
+        return res;
+      })
+      .catch(() => caches.match(req))
+  );
 });
