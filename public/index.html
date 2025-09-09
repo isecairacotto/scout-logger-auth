@@ -307,6 +307,25 @@
 
   const API = '';
 
+  // index.html (inside your login() "online" branch)
+const res = await fetch(API + '/api/login', {
+  method:'POST',
+  headers:{ 'Content-Type':'application/json' },
+  body: JSON.stringify({ username, password })
+});
+
+// If the server returned HTML (e.g., index.html), treat as failure
+const ctype = (res.headers.get('content-type') || '').toLowerCase();
+if (!ctype.includes('application/json')) {
+  throw new Error('Non-JSON response');
+}
+
+if(!res.ok){
+  loginMsg.textContent = 'Invalid credentials';
+  return;
+}
+const data = await res.json();
+
   // ---------- Install (PWA) ----------
 let deferredPrompt = null;
 const installBtn = document.getElementById('installBtn');
