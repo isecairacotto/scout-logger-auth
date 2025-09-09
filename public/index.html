@@ -306,6 +306,20 @@
 
   const API = '';
 
+  // ---------- Connectivity banner ----------
+function setOnlineUI(online) {
+  const bar = document.getElementById('topbar');
+  const tag = ' — Offline mode';
+  if (online) {
+    bar.textContent = bar.textContent.replace(tag, '');
+  } else {
+    if (!bar.textContent.includes(tag)) bar.textContent += tag;
+  }
+}
+window.addEventListener('online',  () => setOnlineUI(true));
+window.addEventListener('offline', () => setOnlineUI(false));
+setOnlineUI(navigator.onLine);
+
   // ---------- DOM ----------
   const vLogin = document.getElementById('view-login');
   const vScout = document.getElementById('view-scout');
