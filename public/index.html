@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#13294B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <style>
   :root{
     --red:#D22630; --navy:#13294B; --bg:#f7f7fb; --ink:#1f2430; --muted:#6d7280;
@@ -346,6 +346,7 @@
   const adminScoutsView= document.getElementById('adminScoutsView');
   const adminNewView   = document.getElementById('adminNewView');
   const adminScoutSelect = document.getElementById('adminScoutSelect');
+  window.adminScoutSelect = adminScoutSelect
   const adminEventsTableBody = document.querySelector('#adminEventsTable tbody');
   const adminExportAllBtn = document.getElementById('adminExportAllBtn');
 
@@ -675,6 +676,7 @@ logout2.addEventListener('click', ()=>{
         </td>`;
       eventsTableBody.appendChild(tr);
     });
+    window.renderEventsTable = renderEventsTable;
     eventsTableBody.querySelectorAll('button').forEach(b=>{
       b.addEventListener('click', ()=>{
         const s = loadSession() || {};
@@ -752,6 +754,7 @@ function unmountNewEventBackToScout() {
       adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">No local events for ${user}.</td></tr>`;
       return;
     }
+    window.adminListEventsFor = adminListEventsFor;
     evts.sort((a,b)=> b.id - a.id).forEach(e=>{
       const tr = document.createElement('tr');
       tr.innerHTML = `
