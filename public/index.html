@@ -390,53 +390,44 @@ setOnlineUI(navigator.onLine);
   }
 
   // ---------- Login ----------
-  async function login(){
-    loginMsg.textContent = '';
-    const username = loginUser.value.trim();
-    const password = loginPass.value.trim();
-    if(!username || !password){ loginMsg.textContent = 'Enter username and password'; return; }
-    try{
-      const res = await fetch(API + '/api/login', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ username, password }) });
-      if(!res.ok){ loginMsg.textContent = 'Invalid credentials'; return; }
-      const data = await res.json();
-      saveSession({ token: data.token, role: data.role, fullName: data.fullName, username });
-      routeByRole();
-    }catch{ loginMsg.textContent = 'Network error'; }
+async function login(){
+  loginMsg.textContent = '';
+  const username = loginUser.value.trim();
+  const password = loginPass.value.trim();
+  if(!username || !password){
+    loginMsg.textContent = 'Enter username and password';
+    return;
   }
-  function routeByRole(){
-    const s = loadSession();
-    if(!s){ show(vLogin); topbar.textContent=''; return; }
-     loggerBooted = false;
-    if(s.role === 'admin'){
-      adminWhoami.textContent = `Signed in as ${s.fullName} (admin)`;
-      topbar.textContent = `${s.fullName} — Admin`;
-      show(vAdmin);
-      initAdminUI();
-      // default to Scouts tab
-      adminScoutsTab.classList.add('active'); adminNewTab.classList.remove('active');
-      adminScoutsView.classList.remove('hidden'); adminNewView.classList.add('hidden');
-    } else {
-      whoami.textContent = `Signed in as ${s.fullName}`;
-      topbar.textContent = `${s.fullName}`;
-      show(vScout);
-      // default to History tab
-      document.querySelector('[data-tab="history"]').click();
-    }
-  }
-  loginBtn.addEventListener('click', login);
-  loginUser.addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
-  loginPass.addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
-  logout1.addEventListener('click', ()=>{
-  clearSession();
-  loggerBooted = false;   // reset logger when logging out
-  routeByRole();
-});
 
-logout2.addEventListener('click', ()=>{
-  clearSession();
-  loggerBooted = false;   // reset logger when logging out
-  routeByRole();
-});
+  // ✅ Offline fallback: allow local-only session
+  if (!navigator.onLine) {
+    loginMsg.textContent = 'Offline: local mode enabled';
+    saveSession({ token: 'local', role: 'scout', fullName: username, username });
+    routeByRole();
+    return;
+  }
+
+  // Normal online login
+  try{
+    const res = await fetch(API + '/api/login', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    if(!res.ok){
+      loginMsg.textContent = 'Invalid credentials';
+      return;
+    }
+    const data = await res.json();
+    saveSession({ token: data.token, role: data.role, fullName: data.fullName, username });
+    routeByRole();
+  }catch{
+    // If network fails mid-login, still let them in as local mode
+    loginMsg.textContent = 'Network error — using local mode';
+    saveSession({ token: 'local', role: 'scout', fullName: username, username });
+    routeByRole();
+  }
+}
 
   // ---------- Scout Tabs ----------
   scoutTabs.addEventListener('click', (e)=>{
