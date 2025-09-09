@@ -4,6 +4,11 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Scout Logger</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#13294B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <style>
   :root{
     --red:#D22630; --navy:#13294B; --bg:#f7f7fb; --ink:#1f2430; --muted:#6d7280;
@@ -289,17 +294,12 @@
   </svg>
 
 <script>
-    
 (function(){
-  // Offline SW (inline)
+
+  // ---------- Service Worker (PWA) ----------
   if ('serviceWorker' in navigator) {
-    const sw = `
-      const CACHE='scout-logger-v1';
-      self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./','./index.html'])))});
-      self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=> r || fetch(e.request).catch(()=> caches.match('./index.html'))))});
-    `;
-    const u = URL.createObjectURL(new Blob([sw], {type:'text/javascript'}));
-    navigator.serviceWorker.register(u).catch(()=>{});
+    // Registers your real SW file at the site root
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
 
   const API = '';
