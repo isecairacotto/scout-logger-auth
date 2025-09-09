@@ -1,11 +1,12 @@
 /// <reference lib="WebWorker" />
-const SW_VERSION = 'v6'; // bump to invalidate old caches
+const SW_VERSION = 'v8'; // bump to invalidate old caches
 const APP_SHELL = [
   '/',               // index.html served here
   '/index.html',
   '/manifest.jsopn', // <-- use your actual manifest filename
   '/icon-192.png',   // <-- icons at root, to match your manifest
-  '/icon-512.png'
+  '/icon-512.png',
+  '/db.js'
   // add more static files here if you later split CSS/JS
 ];
 
