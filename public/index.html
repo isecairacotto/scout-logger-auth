@@ -66,6 +66,7 @@
   <header>
     <div class="brand"><h1>Scout Logger</h1></div>
     <div id="topbar" class="hint"></div>
+    <button id="installBtn" class="ghost" style="display:none">Install</button>
   </header>
 
   <main class="grid">
@@ -305,6 +306,31 @@
   }
 
   const API = '';
+
+  // ---------- Install (PWA) ----------
+let deferredPrompt = null;
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (installBtn) installBtn.style.display = 'inline-block';
+});
+
+if (installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    try { await deferredPrompt.userChoice; } catch {}
+    deferredPrompt = null;
+    installBtn.style.display = 'none';
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  if (installBtn) installBtn.style.display = 'none';
+});
+
 
   // ---------- Connectivity banner ----------
 function setOnlineUI(online) {
