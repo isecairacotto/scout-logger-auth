@@ -1,18 +1,16 @@
 /// <reference lib="WebWorker" />
-const SW_VERSION = 'v5'; // bump to bust old caches
+const SW_VERSION = 'v6'; // bump to invalidate old caches
 const APP_SHELL = [
-  '/',                 // make sure your server serves index.html here
+  '/',               // index.html served here
   '/index.html',
-  '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
-  // add any other static files you serve (css/js if separate)
+  '/manifest.jsopn', // <-- use your actual manifest filename
+  '/icon-192.png',   // <-- icons at root, to match your manifest
+  '/icon-512.png'
+  // add more static files here if you later split CSS/JS
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(SW_VERSION).then((cache) => cache.addAll(APP_SHELL))
-  );
+  e.waitUntil(caches.open(SW_VERSION).then((cache) => cache.addAll(APP_SHELL)));
   self.skipWaiting();
 });
 
@@ -25,18 +23,12 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Network strategy:
-// - Navigations: return cached app shell fallback (offline HTML)
-// - Static files: cache-first
-// - Everything else: try network, fall back to cache
 self.addEventListener('fetch', (e) => {
   const req = e.request;
 
-  // 1) Handle navigations (address bar / SPA deep-links)
+  // Navigations: app-shell fallback
   if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req).catch(() => caches.match('/index.html'))
-    );
+    e.respondWith(fetch(req).catch(() => caches.match('/index.html')));
     return;
   }
 
@@ -52,7 +44,7 @@ self.addEventListener('fetch', (e) => {
      url.pathname.endsWith('.js') ||
      url.pathname === '/');
 
-  // 2) Static assets: cache-first
+  // Static: cache-first
   if (isStatic) {
     e.respondWith(
       caches.match(req).then((cached) =>
@@ -67,7 +59,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 3) Default: network-first, fallback to cache
+  // Default: network-first, fallback to cache
   e.respondWith(
     fetch(req)
       .then((res) => {
