@@ -1,13 +1,7 @@
 /// <reference lib="WebWorker" />
-const SW_VERSION = 'v10'; // bump to invalidate old caches
+const SW_VERSION = 'v12'; // bump to invalidate old caches
 const APP_SHELL = [
-  '/',               // index.html served here
-  '/index.html',
-  '/manifest.jsopn', // <-- use your actual manifest filename
-  '/icon-192.png',   // <-- icons at root, to match your manifest
-  '/icon-512.png',
-  '/db.js'
-  // add more static files here if you later split CSS/JS
+  '/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/db.js'
 ];
 
 self.addEventListener('install', (e) => {
