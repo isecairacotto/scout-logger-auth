@@ -66,7 +66,7 @@
   <header>
     <div class="brand"><h1>Scout Logger</h1></div>
     <div id="topbar" class="hint"></div>
-    <button id="Btn" class="ghost" style="display:none"></button>
+    <button id="installBtn" class="ghost" style="display:none">Install app</button>
   </header>
 
   <main class="grid">
@@ -307,52 +307,46 @@
 
   const API = '';
 
-  // index.html (inside your login() "online" branch)
-const res = await fetch(API + '/api/login', {
-  method:'POST',
-  headers:{ 'Content-Type':'application/json' },
-  body: JSON.stringify({ username, password })
-});
-
-// If the server returned HTML (e.g., index.html), treat as failure
-const ctype = (res.headers.get('content-type') || '').toLowerCase();
-if (!ctype.includes('application/json')) {
-  throw new Error('Non-JSON response');
-}
-
-if(!res.ok){
-  loginMsg.textContent = 'Invalid credentials';
-  return;
-}
-const data = await res.json();
-
-// Normal online login
-try{
-  const res = await fetch(API + '/api/login', {
-    method:'POST',
-    headers:{ 'Content-Type':'application/json' },
-    body: JSON.stringify({ username, password })
-  });
-
-  // 👇 Guard: if server returns HTML (e.g., index.html), treat as failure
-  const ctype = (res.headers.get('content-type') || '').toLowerCase();
-  if (!ctype.includes('application/json')) {
-    throw new Error('Non-JSON response');
-  }
-
-  if(!res.ok){
-    loginMsg.textContent = 'Invalid credentials';
+  async function login(){
+  loginMsg.textContent = '';
+  const username = loginUser.value.trim();
+  const password = loginPass.value.trim();
+  if(!username || !password){
+    loginMsg.textContent = 'Enter username and password';
     return;
   }
-  const data = await res.json();
-  saveSession({ token: data.token, role: data.role, fullName: data.fullName, username });
-  routeByRole();
-}catch{
-  // If network fails mid-login, still let them in as local mode
-  loginMsg.textContent = 'Network error — using local mode';
-  saveSession({ token: 'local', role: 'scout', fullName: username, username });
-  routeByRole();
+
+  if (!navigator.onLine) {
+    loginMsg.textContent = 'Offline: local mode enabled';
+    saveSession({ token: 'local', role: 'scout', fullName: username, username });
+    routeByRole();
+    return;
+  }
+
+  try{
+    const res = await fetch(API + '/api/login', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    const ctype = (res.headers.get('content-type') || '').toLowerCase();
+    if (!ctype.includes('application/json')) throw new Error('Non-JSON response');
+
+    if(!res.ok){
+      loginMsg.textContent = 'Invalid credentials';
+      return;
+    }
+    const data = await res.json();
+    saveSession({ token: data.token, role: data.role, fullName: data.fullName, username });
+    routeByRole();
+  }catch{
+    loginMsg.textContent = 'Network error — using local mode';
+    saveSession({ token: 'local', role: 'scout', fullName: username, username });
+    routeByRole();
+  }
 }
+
 
 // ---------- Install (PWA) ----------
 let deferredPrompt = null;
@@ -469,12 +463,12 @@ async function login(){
   loginMsg.textContent = '';
   const username = loginUser.value.trim();
   const password = loginPass.value.trim();
-  if(!username || !password){
+  if (!username || !password){
     loginMsg.textContent = 'Enter username and password';
     return;
   }
 
-  // ✅ Offline fallback: allow local-only session
+  // Offline: allow local-only session
   if (!navigator.onLine) {
     loginMsg.textContent = 'Offline: local mode enabled';
     saveSession({ token: 'local', role: 'scout', fullName: username, username });
@@ -482,27 +476,93 @@ async function login(){
     return;
   }
 
-  // Normal online login
-  try{
-    const res = await fetch(API + '/api/login', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ username, password })
+  // Online: call API with a timeout and content-type guard
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000); // 8s safety
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ username, password }),
+      signal: ctrl.signal
     });
-    if(!res.ok){
+    clearTimeout(t);
+
+    // If SW/server served index.html or anything non-JSON, treat as failure
+    const ctype = (res.headers.get('content-type') || '').toLowerCase();
+    if (!ctype.includes('application/json')) throw new Error('non-json');
+
+    if (!res.ok) {
       loginMsg.textContent = 'Invalid credentials';
       return;
     }
+
     const data = await res.json();
     saveSession({ token: data.token, role: data.role, fullName: data.fullName, username });
     routeByRole();
-  }catch{
-    // If network fails mid-login, still let them in as local mode
+  } catch (err) {
+    // Network error, timeout, or non-JSON response -> local mode
     loginMsg.textContent = 'Network error — using local mode';
     saveSession({ token: 'local', role: 'scout', fullName: username, username });
     routeByRole();
   }
 }
+
+  function routeByRole(){
+  const s = loadSession();
+  if (!s) {
+    show(vLogin);
+    topbar.textContent = '';
+    return;
+  }
+
+  const isLocal = s.token === 'local';  // offline login
+  loggerBooted = false;                 // ensure logger can init cleanly
+
+  if (s.role === 'admin' && !isLocal) {
+    // Admin, online only
+    adminWhoami.textContent = `Signed in as ${s.fullName} (admin)`;
+    topbar.textContent = `${s.fullName} — Admin`;
+    show(vAdmin);
+    initAdminUI();
+
+    // Reset admin tabs to "Scouts" and ensure the New Event panel is back under Scout
+    adminScoutsTab.classList.add('active');
+    adminNewTab.classList.remove('active');
+    adminScoutsView.classList.remove('hidden');
+    adminNewView.classList.add('hidden');
+    if (typeof unmountNewEventBackToScout === 'function') unmountNewEventBackToScout();
+  } else {
+    // Scout (or offline local mode)
+    whoami.textContent = `Signed in as ${s.fullName}${isLocal ? ' (offline)' : ''}`;
+    topbar.textContent = `${s.fullName}${isLocal ? ' — Offline mode' : ''}`;
+    show(vScout);
+
+    // Force the History tab visible and New Event hidden
+    panelHistory.classList.remove('hidden');
+    panelNew.classList.add('hidden');
+
+    // Render history safely without relying on a synthetic .click()
+    if (typeof renderEventsTable === 'function') renderEventsTable();
+  }
+}
+
+// listeners
+loginBtn.addEventListener('click', login);
+loginUser.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+  logout1.addEventListener('click', ()=>{
+  clearSession();
+  loggerBooted = false;
+  routeByRole();
+});
+logout2.addEventListener('click', ()=>{
+  clearSession();
+  loggerBooted = false;
+  routeByRole();
+});
 
   // ---------- Scout Tabs ----------
   scoutTabs.addEventListener('click', (e)=>{
