@@ -1,6 +1,7 @@
 // server.js — deployable Node server (Express 5-safe)
 // - Serves /public/index.html (frontend)
 // - Auth API at /api/login
+// - Events sync API at /api/events (POST/GET)
 // - Works locally (http://localhost:3000) and on hosts (Render/Railway/etc.)
 
 const express = require("express");
@@ -8,21 +9,20 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SECRET_KEY = process.env.JWT_SECRET || "dev-only-secret";
 
-// ----- Middleware -----
+// --------- Middleware ----------
 app.use(express.json());
-// If frontend is served from this same server, CORS isn't strictly needed,
-// but leaving it enabled is fine. Lock it down later if you split FE/BE.
 app.use(cors());
 
-// ----- Serve the frontend (public/index.html) -----
+// --------- Static frontend (/public) ----------
 app.use(express.static(path.join(__dirname, "public")));
 
-// ----- Users (plaintext shown is what users type to log in) -----
+// --------- Users (plaintext shown is what users type to log in) ----------
 const RAW_USERS = [
   { username: "faffanis",      password: "faffanis",      role: "scout", fullName: "Fesar Affanis" },
   { username: "malvarez",      password: "malvarez",      role: "scout", fullName: "Manny Alvarez" },
@@ -89,7 +89,19 @@ const USERS = Array.from(seen.values()).map(u => ({
   password: bcrypt.hashSync(u.password, 10),
 }));
 
-// ----- API routes -----
+// --------- Events persistence (simple JSON file) ----------
+const DATA_FILE = path.join(__dirname, "events.json");
+
+function loadEvents() {
+  try { return JSON.parse(fs.readFileSync(DATA_FILE, "utf8")); }
+  catch { return []; }
+}
+function saveEvents(list) {
+  try { fs.writeFileSync(DATA_FILE, JSON.stringify(list, null, 2)); } catch {}
+}
+let EVENTS = loadEvents(); // [{ id, user, name, date, location, scout, count, rows, dsp, blast, trackman, createdAt }]
+
+// --------- API routes ----------
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 // Debug helper
@@ -115,21 +127,89 @@ app.post("/api/login", (req, res) => {
   res.json({ token, fullName: user.fullName, role: user.role });
 });
 
-// ----- SPA fallback (Express 5 safe, no path-to-regexp) -----
-// Put AFTER static + API routes. Serves index.html for any non-API GET.
+// ---- Auth middleware for events API ----
+function auth(req, res, next) {
+  const hdr = req.headers.authorization || "";
+  const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+  if (!token) return res.status(401).json({ message: "Missing token" });
+  try {
+    req.user = jwt.verify(token, SECRET_KEY); // { username, role }
+    next();
+  } catch {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+}
+
+// ---- Events API ----
+
+// POST /api/events  (scout uploads one event; stored server-side)
+app.post("/api/events", auth, (req, res) => {
+  const u = req.user?.username;
+  if (!u) return res.status(403).json({ message: "Forbidden" });
+
+  const {
+    name = "Untitled",
+    date,
+    location = "",
+    scout = "",
+    rows = [],
+    dsp = false,
+    blast = [],
+    trackman = [],
+  } = req.body || {};
+
+  if (!date || !Array.isArray(rows) || rows.length === 0) {
+    return res.status(400).json({ message: "Missing date or rows" });
+  }
+
+  const evt = {
+    id: Date.now(),
+    user: u,
+    name,
+    date,
+    location,
+    scout: scout || u,
+    count: rows.length,
+    rows,
+    dsp: !!dsp,
+    blast: Array.isArray(blast) ? blast : [],
+    trackman: Array.isArray(trackman) ? trackman : [],
+    createdAt: new Date().toISOString(),
+  };
+
+  EVENTS.push(evt);
+  saveEvents(EVENTS);
+  res.json({ ok: true, id: evt.id });
+});
+
+// GET /api/events?user=username  (admin can fetch any; scouts only themselves)
+app.get("/api/events", auth, (req, res) => {
+  const me = req.user; // { username, role }
+  const { user } = req.query;
+
+  if (me.role !== "admin" && user && user !== me.username) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+
+  const target = user || me.username;
+  const list = EVENTS.filter(e => e.user === target).sort((a,b) => b.id - a.id);
+  res.json({ user: target, events: list });
+});
+
+// --------- SPA fallback (after static + API) ----------
 app.use((req, res, next) => {
   if (req.method !== "GET") return next();
   if (req.path.startsWith("/api/")) return next();
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Optional: basic error handler
+// --------- Error handler ----------
 app.use((err, _req, res, _next) => {
   console.error(err);
   res.status(500).json({ message: "Server error" });
 });
 
-// ----- Start server -----
+// --------- Start ----------
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
