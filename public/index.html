@@ -595,6 +595,16 @@ logout2.addEventListener('click', ()=>{
     let players = loadJSON(K_PLAYERS, []);
     let pitches = loadJSON(K_PITCHES, []);
 
+      // 🔥 NEW: reload helper so "Open" can refresh logger
+  function reloadLoggerFromStorage(){
+    players = loadJSON(K_PLAYERS, []);
+    pitches = loadJSON(K_PITCHES, []);
+    refreshSelects();
+    renderTable();
+  }
+  // expose globally so History/Admin handlers can call it
+  window.reloadLoggerFromStorage = reloadLoggerFromStorage;
+
     // Defaults
     roleSeg.querySelector('button[data-role="batter"]').classList.add('active');
 
@@ -836,6 +846,9 @@ logout2.addEventListener('click', ()=>{
           // load into New Event for editing
           saveJSON(K_PITCHES, e.rows.slice());
           document.querySelector('[data-tab="new"]').click();
+          if (typeof window.reloadLoggerFromStorage === 'function') {
+            window.reloadLoggerFromStorage();
+          }
           window.scrollTo({top:0,behavior:'smooth'});
         }
         if (action==='del'){
