@@ -658,11 +658,35 @@ logout2.addEventListener('click', ()=>{
     }
     function resetPitchForm(){ clearActive(zoneSeg); clearActive(actionSeg); clearActive(pitchTypeSeg); velo.value=0; spin.value=0; sliderToBox(); }
 
-    function submitPitch(){
-      const sel=getSelections(); if(!sel) return;
-      const row={ time:nowStamp(), pitcher:sel.pitcher, hitter:sel.hitter, zone:getActiveVal(zoneSeg)||'', action:getActiveVal(actionSeg)||'', pitchType:getActiveVal(pitchTypeSeg)||'', velo:Number(velo.value)===0?'':Number(velo.value), spin:Number(spin.value)===0?'':Number(spin.value) };
-      pitches.push(row); saveJSON(K_PITCHES,pitches); renderTable(); submitPitchBtn.textContent='Logged ✓'; setTimeout(()=> submitPitchBtn.textContent='Submit Pitch',500); resetPitchForm();
-    }
+  function submitPitch(){
+    const sel = getSelections();
+    if (!sel) return;
+
+  // ✅ Pull values explicitly
+  const zoneVal   = getActiveVal(zoneSeg)   || '';
+  const actionVal = getActiveVal(actionSeg) || '';
+  const typeVal   = getActiveVal(pitchTypeSeg) || '';
+
+  const row = {
+    time: nowStamp(),
+    pitcher: sel.pitcher,
+    hitter: sel.hitter,
+    zone: zoneVal,
+    action: actionVal,
+    pitchType: typeVal,
+    velo: Number(velo.value) === 0 ? '' : Number(velo.value),
+    spin: Number(spin.value) === 0 ? '' : Number(spin.value)
+  };
+
+  pitches.push(row);
+  saveJSON(K_PITCHES, pitches);
+  renderTable();
+
+  submitPitchBtn.textContent = 'Logged ✓';
+  setTimeout(() => submitPitchBtn.textContent = 'Submit Pitch', 500);
+
+  resetPitchForm();
+}
     function missPitch(){
       const sel=getSelections(); if(!sel) return;
       const row={ time:nowStamp(), pitcher:sel.pitcher, hitter:sel.hitter, zone:'', action:'', pitchType:'', velo:'', spin:'' };
@@ -731,10 +755,27 @@ logout2.addEventListener('click', ()=>{
       const active=dspToggle.classList.toggle('active');
       dspToggle.textContent=active?'Yes':'No';
       dspToggle.setAttribute('aria-pressed', String(active));
-      if(active){ dspChecklist.classList.add('show'); } else { dspChecklist.classList.remove('show'); }
-    });
-    ckBlast.addEventListener('change', e=>{ blastTeamWrap.style.display = e.target.checked ? 'block' : 'none'; });
-    ckTrackman.addEventListener('change', e=>{ trackmanTeamWrap.style.display = e.target.checked ? 'block' : 'none'; });
+
+      // ✅ keep checklist in sync
+  if (active) {
+    dspChecklist.classList.add('show');
+  } else {
+    dspChecklist.classList.remove('show');
+    // Reset sub-options when turning DSP off
+    ckBlast.checked = false; 
+    blastTeamWrap.style.display = 'none';
+    ckTrackman.checked = false; 
+    trackmanTeamWrap.style.display = 'none';
+  }
+});
+
+ckBlast.addEventListener('change', e => {
+  blastTeamWrap.style.display = e.target.checked ? 'block' : 'none';
+});
+
+ckTrackman.addEventListener('change', e => {
+  trackmanTeamWrap.style.display = e.target.checked ? 'block' : 'none';
+});
 
     // Save Event -> History
     function eventCSVRows(event){
