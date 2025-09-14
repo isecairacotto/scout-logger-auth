@@ -808,6 +808,45 @@ ckTrackman.addEventListener('change', e => {
       const rows = loadJSON(K_PITCHES, []);
       if (!rows.length){ eventMsg.innerHTML='<div class="success warn">No pitches to save.</div>'; return; }
 
+      // Try to sync this event to the server (if logged in + online)
+(async () => {
+  try {
+    const sess = loadSession() || {};
+    if (navigator.onLine && sess.token && sess.token !== 'local') {
+      const payload = {
+        name,
+        date,
+        location,
+        scout,
+        rows,
+        dsp,
+        blast,
+        trackman
+      };
+      const r = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + sess.token
+        },
+        body: JSON.stringify(payload)
+      });
+      // Non-200 or non-JSON will throw into catch
+      const ct = (r.headers.get('content-type') || '').toLowerCase();
+      if (!r.ok || !ct.includes('application/json')) throw new Error('upload failed');
+      const j = await r.json();
+      // Optional: mark last event synced
+      // evts[evts.length - 1].cloudId = j.id;
+      // saveJSON(K_EVENTS, evts);
+    }
+  } catch (err) {
+    // Stay silent: offline or server blocked; local save already happened.
+    // You could show a tiny hint if you want:
+    // console.log('Cloud upload skipped:', err?.message || err);
+  }
+})();
+
+
       // DSP meta
       const dsp = dspToggle.classList.contains('active');
       const blast = ckBlast.checked ? Array.from(blastTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
