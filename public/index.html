@@ -980,15 +980,16 @@ function unmountNewEventBackToScout() {
       adminScoutSelect.dataset.ready='1';
     }
   }
-  function adminListEventsFor(user){
-    const evts = loadJSON(keyEvents(user), []);
-    adminEventsTableBody.innerHTML='';
-    if (!evts.length){
-      adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">No local events for ${user}.</td></tr>`;
+function adminListEventsFor(user){
+  adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">Loading…</td></tr>`;
+
+  const render = (list) => {
+    adminEventsTableBody.innerHTML = '';
+    if (!list || !list.length) {
+      adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">No events for ${user}.</td></tr>`;
       return;
     }
-    window.adminListEventsFor = adminListEventsFor;
-    evts.sort((a,b)=> b.id - a.id).forEach(e=>{
+    list.sort((a,b)=> b.id - a.id).forEach(e=>{
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${e.date}</td>
@@ -1003,24 +1004,39 @@ function unmountNewEventBackToScout() {
         </td>`;
       adminEventsTableBody.appendChild(tr);
     });
+
     adminEventsTableBody.querySelectorAll('button').forEach(b=>{
       b.addEventListener('click', ()=>{
         const id = Number(b.dataset.id), action=b.dataset.action;
-        const list = loadJSON(keyEvents(user), []);
         const idx = list.findIndex(x=>x.id===id); if (idx<0) return;
         const e = list[idx];
+
         if (action==='csv'){
           const headers = ['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
-          const rows = e.rows.map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin}));
+          const rows = e.rows.map(r=>({
+            date:e.date,event:e.name,location:e.location,scout:e.scout,
+            time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,
+            action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin
+          }));
           download(`${user} - ${e.date} ${e.name}.csv`, toCSV(rows, headers));
         }
+
         if (action==='del'){
-          if (confirm(`Delete ${e.name}?`)){ list.splice(idx,1); saveJSON(keyEvents(user), list); adminListEventsFor(user); }
+          // Only deletes local cache, not server copy
+          const local = loadJSON(keyEvents(user), []);
+          const lidx = local.findIndex(x=>x.id===id);
+          if (lidx>=0){
+            if (confirm(`Delete local copy of ${e.name}?`)){
+              local.splice(lidx,1);
+              saveJSON(keyEvents(user), local);
+            }
+          }
+          render(list.filter(ev=>ev.id !== id));
         }
+
         if (action==='open'){
           const s = loadSession(); if (!s){ alert('Please log in first.'); return; }
           saveJSON(keyPitches(s.username), e.rows.slice());
-          // jump to New Event UI (so admin sees the form, not an empty tab)
           show(vScout);
           adminNewTab.classList.add('active'); 
           adminScoutsTab.classList.remove('active');
@@ -1031,7 +1047,30 @@ function unmountNewEventBackToScout() {
         }
       });
     });
-  }
+  };
+
+  // Cloud-first fetch
+  (async () => {
+    const sess = loadSession() || {};
+    if (navigator.onLine && sess.role === 'admin' && sess.token && sess.token !== 'local') {
+      try {
+        const r = await fetch(`/api/events?user=${encodeURIComponent(user)}`, {
+          headers: { 'Authorization': 'Bearer ' + sess.token }
+        });
+        const ct = (r.headers.get('content-type') || '').toLowerCase();
+        if (!r.ok || !ct.includes('application/json')) throw new Error('bad response');
+        const data = await r.json();
+        render(data.events || []);
+        return;
+      } catch (e) {
+        // fall through to local
+      }
+    }
+    // Local fallback
+    render(loadJSON(keyEvents(user), []));
+  })();
+}
+
   adminScoutsTab.addEventListener('click', ()=>{
   show(vAdmin); // <-- bring admin shell back if we were in scout view
   adminScoutsTab.classList.add('active'); 
