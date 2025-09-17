@@ -81,6 +81,13 @@ for (const u of RAW_USERS) {
   else seen.set(key, (prev.role === "admin" || u.role === "admin") ? { ...prev, ...u, role: "admin" } : u);
 }
 
+const USERS = Array.from(seen.values()).map(u => ({
+  username: u.username,
+  fullName: u.fullName,
+  role: u.role,
+  password: bcrypt.hashSync(u.password, 10),
+}));
+
 // Hash passwords at startup
 const USERS = Array.from(seen.values()).map(u => ({
   username: u.username.trim(),
@@ -114,7 +121,7 @@ app.get("/api/__debug/has/:u", (req, res) => {
 // Login
 app.post("/api/login", (req, res) => {
   let { username, password } = req.body || {};
-  username = (username || "").trim();
+  username = (username || "").trim().toLowerCase();
   password = (password || "").trim();
 
   const user = USERS.find(u => u.username === username);
@@ -125,6 +132,19 @@ app.post("/api/login", (req, res) => {
 
   const token = jwt.sign({ username: user.username, role: user.role }, SECRET_KEY, { expiresIn: "12h" });
   res.json({ token, fullName: user.fullName, role: user.role });
+});
+
+function auth(req, res, next) { /* you already have this for events */ next(); }
+
+app.get("/api/users", auth, (req, res) => {
+  if (req.user?.role !== "admin") return res.status(403).json({ message: "Forbidden" });
+  // return sorted by last name
+  const byLast = [...USERS].sort((a,b) => {
+    const la = (a.fullName||'').trim().split(/\s+/).slice(-1)[0].toLowerCase();
+    const lb = (b.fullName||'').trim().split(/\s+/).slice(-1)[0].toLowerCase();
+    return la.localeCompare(lb);
+  });
+  res.json(byLast.map(u => ({ username: u.username, fullName: u.fullName, role: u.role })));
 });
 
 // ---- Auth middleware for events API ----
