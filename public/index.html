@@ -899,11 +899,18 @@ ckTrackman.addEventListener('change', e => {
         <td>${e.location||''}</td>
         <td>${e.scout||''}</td>
         <td>${e.count}</td>
-        <td class="cell-actions">
-          <button class="ghost" data-action="csv" data-id="${e.id}">CSV</button>
-          <button class="ghost" data-action="open" data-id="${e.id}">Open</button>
-          <button class="ghost" data-action="del" data-id="${e.id}">Delete</button>
-        </td>`;
+        const sRole = (loadSession()||{}).role || 'scout';
+        tr.innerHTML = `
+          <td>${e.date}</td>
+          <td>${e.name}</td>
+          <td>${e.location||''}</td>
+          <td>${e.scout||''}</td>
+          <td>${e.count}</td>
+          <td class="cell-actions">
+            <button class="ghost" data-action="csv" data-id="${e.id}">CSV</button>
+            <button class="ghost" data-action="open" data-id="${e.id}">Open</button>
+            ${sRole==='admin' ? `<button class="ghost" data-action="del" data-id="${e.id}">Delete</button>` : ``}
+        </td>`;;
       eventsTableBody.appendChild(tr);
     });
     window.renderEventsTable = renderEventsTable;
