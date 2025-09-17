@@ -32,8 +32,23 @@
   .seg button.active{border-color:var(--navy);color:#fff;background:var(--navy)}
   .seg.sm button{min-width:70px;padding:9px 10px;font-size:14px}
   .slider-wrap{display:flex;align-items:center;gap:10px}
-  input[type="range"]{flex:1}
-  .badge-input{width:66px;text-align:center;border:1px solid var(--border);border-radius:10px;padding:6px 8px;background:#fff;font-weight:700;font-size:14px}
+  input[type="range"] {
+  flex: 1;
+  height: 36px;          /* bigger track height */
+  }
+  input[type="range"]::-webkit-slider-thumb {
+  height: 28px;
+  width: 28px;
+  }
+  input[type="range"]::-moz-range-thumb {
+  height: 28px;
+  width: 28px;
+  }
+  .badge-input {
+  width: 48px;      /* smaller width */
+  font-size: 13px;  /* slightly smaller text */
+  padding: 4px 6px;
+  }
   .primary{background:var(--red);color:#fff;border:none;border-radius:12px;padding:14px 16px;font-size:16px;font-weight:800;cursor:pointer}
   .secondary{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:16px;font-weight:700;cursor:pointer}
   .ghost{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 10px;cursor:pointer}
@@ -614,15 +629,68 @@ logout2.addEventListener('click', ()=>{
     actionSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(actionSeg, e.target); });
     pitchTypeSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(pitchTypeSeg, e.target); });
 
-    // Slider sync
-    function sliderToBox(){ veloBox.value = (Number(velo.value)===0 ? '' : String(velo.value)); spinBox.value = (Number(spin.value)===0 ? '' : String(spin.value)); }
-    function commitVelo(){ const v=veloBox.value.trim(); velo.value = (v===''||v.toUpperCase()==='NA') ? 0 : clamp(parseInt(v)||0,0,105); sliderToBox(); }
-    function commitSpin(){ const v=spinBox.value.trim(); spin.value = (v===''||v.toUpperCase()==='NA') ? 0 : clamp(parseInt(v)||0,0,4000); sliderToBox(); }
-    velo.addEventListener('input', sliderToBox); spin.addEventListener('input', sliderToBox);
-    veloBox.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitVelo(); veloBox.blur(); }});
-    spinBox.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitSpin(); spinBox.blur(); }});
-    veloBox.addEventListener('change', commitVelo); spinBox.addEventListener('change', commitSpin);
-    sliderToBox();
+    // ---- Slider + badge (NA until touched) ----
+    const VELO_MIN = 50,  VELO_MAX = 105;
+    const SPIN_MIN = 500, SPIN_MAX = 4000;
+    
+    // set ranges (also update your HTML if you like)
+    velo.min = VELO_MIN;  velo.max = VELO_MAX;  velo.step = 1;
+    spin.min = SPIN_MIN;  spin.max = SPIN_MAX;  spin.step = 10;
+    
+    // flags: only record a value once the control was touched
+    let veloTouched = false;
+    let spinTouched = false;
+    
+    // initial: sliders parked at min, badges blank (NA)
+    velo.value = VELO_MIN;
+    spin.value = SPIN_MIN;
+    veloBox.value = '';
+    spinBox.value = '';
+    
+    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+    
+    // slider → badge (user dragged)
+    velo.addEventListener('input', () => {
+      veloTouched = true;
+      veloBox.value = String(velo.value);
+    });
+spin.addEventListener('input', () => {
+  spinTouched = true;
+  spinBox.value = String(spin.value);
+});
+
+// badge → slider (user typed / pasted)
+function commitVeloBox(){
+  const v = veloBox.value.trim();
+  if (v === '' || v.toUpperCase() === 'NA'){
+    veloTouched = false;
+    veloBox.value = ''; // keep blank = NA
+    // slider stays parked at min; ignored while not touched
+    return;
+  }
+  const n = clamp(parseInt(v) || 0, VELO_MIN, VELO_MAX);
+  velo.value = n;
+  veloTouched = true;
+  veloBox.value = String(n);
+}
+function commitSpinBox(){
+  const v = spinBox.value.trim();
+  if (v === '' || v.toUpperCase() === 'NA'){
+    spinTouched = false;
+    spinBox.value = '';
+    return;
+  }
+  const n = clamp(parseInt(v) || 0, SPIN_MIN, SPIN_MAX);
+  spin.value = n;
+  spinTouched = true;
+  spinBox.value = String(n);
+}
+
+veloBox.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); commitVeloBox(); veloBox.blur(); }});
+spinBox.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); commitSpinBox(); spinBox.blur(); }});
+veloBox.addEventListener('change', commitVeloBox);
+spinBox.addEventListener('change', commitSpinBox);
+
 
     // Players
     function refreshSelects(){
@@ -656,11 +724,45 @@ logout2.addEventListener('click', ()=>{
       if(!hitter ||hitter.startsWith('—')){ alert('Select a HITTER.');  return null; }
       return {pitcher,hitter};
     }
-    function resetPitchForm(){ clearActive(zoneSeg); clearActive(actionSeg); clearActive(pitchTypeSeg); velo.value=0; spin.value=0; sliderToBox(); }
+    function resetPitchForm(){
+  clearActive(zoneSeg);
+  clearActive(actionSeg);
+  clearActive(pitchTypeSeg);
+
+  // reset sliders + badges to NA state
+  veloTouched = false;  spinTouched = false;
+  velo.value = VELO_MIN;  spin.value = SPIN_MIN;
+  veloBox.value = '';     spinBox.value = '';
+}
 
   function submitPitch(){
-    const sel = getSelections();
+    const sel = getSelections(); 
     if (!sel) return;
+
+  const zoneVal   = getActiveVal(zoneSeg)      || '';
+  const actionVal = getActiveVal(actionSeg)    || '';
+  const typeVal   = getActiveVal(pitchTypeSeg) || '';
+
+  const row = {
+    time: nowStamp(),
+    pitcher: sel.pitcher,
+    hitter: sel.hitter,
+    zone: zoneVal,
+    action: actionVal,
+    pitchType: typeVal,
+    // record a number ONLY if the control was touched; else blank (= NA)
+    velo: veloTouched ? Number(velo.value) : '',
+    spin: spinTouched ? Number(spin.value) : ''
+  };
+
+  pitches.push(row);
+  saveJSON(K_PITCHES, pitches);
+  renderTable();
+  submitPitchBtn.textContent = 'Logged ✓';
+  setTimeout(()=> submitPitchBtn.textContent='Submit Pitch', 500);
+  resetPitchForm();
+}
+
 
   // ✅ Pull values explicitly
   const zoneVal   = getActiveVal(zoneSeg)   || '';
