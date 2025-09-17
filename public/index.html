@@ -979,14 +979,38 @@ function unmountNewEventBackToScout() {
   const KNOWN_USERS = [
     "faffanis","malvarez","mberumen","fbreton","scabral","jcabrera","jcalderon","pciriaco","tclaus","jcruz","rcubillan","jdavis","jfitzpatrick","egomez","mgroopman","jhernandez","jkaregeannes","jkim","mlaureano","llin","wlobo","kmatsumoto","emedina","amejia","rmendoza","rmora","cmorillo","rmotooka","enanita","dneuman","cocando","rpino","eramirez","arequena","hrincones","mrodriguez","eromero","rsaggiadi","lsambo","gschilz","czamora","mcuellar","cschneider","isecairacotto"
   ];
-  function initAdminUI(){
-    // populate list once
-    if (!adminScoutSelect.dataset.ready){
-      adminScoutSelect.innerHTML=''; const add=(v,t)=>{ const o=document.createElement('option'); o.value=v; o.text=t; adminScoutSelect.add(o); };
-      add('', '— select scout —'); KNOWN_USERS.forEach(u=> add(u,u));
-      adminScoutSelect.dataset.ready='1';
-    }
+function initAdminUI(){
+  // populate list once
+  if (!adminScoutSelect.dataset.ready){
+    adminScoutSelect.innerHTML='';
+    const add=(v,t)=>{ 
+      const o=document.createElement('option'); 
+      o.value=v; 
+      o.text=t; 
+      adminScoutSelect.add(o); 
+    };
+    add('', '— select scout —');
+
+    // 🔄 REPLACE THIS PART:
+    // KNOWN_USERS.forEach(u=> add(u,u));
+
+    // ✅ With this fetch-first fallback:
+    fetch('/api/users', { headers:{ 'Authorization':'Bearer '+(loadSession()?.token||'') }})
+      .then(r => r.ok ? r.json() : null)
+      .then(list => {
+        if (list && Array.isArray(list)){
+          list.forEach(u => add(u.username, u.fullName));
+        } else {
+          KNOWN_USERS.forEach(u=> add(u,u)); // fallback
+        }
+      })
+      .catch(() => {
+        KNOWN_USERS.forEach(u=> add(u,u)); // offline fallback
+      });
+
+    adminScoutSelect.dataset.ready='1';
   }
+}
 function adminListEventsFor(user){
   adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">Loading…</td></tr>`;
 
