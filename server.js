@@ -75,7 +75,7 @@ const RAW_USERS = [
 // De-dupe by username; prefer admin if duplicate (covers jfitzpatrick)
 const seen = new Map();
 for (const u of RAW_USERS) {
-  const key = (u.username || "").trim();
+  const key = (u.username || "").trim().toLowerCase();
   const prev = seen.get(key);
   if (!prev) seen.set(key, u);
   else seen.set(key, (prev.role === "admin" || u.role === "admin") ? { ...prev, ...u, role: "admin" } : u);
@@ -90,7 +90,7 @@ const USERS = Array.from(seen.values()).map(u => ({
 
 // Hash passwords at startup
 const USERS = Array.from(seen.values()).map(u => ({
-  username: u.username.trim(),
+  username: u.username.trim().toLowerCase(),
   fullName: u.fullName,
   role: u.role,
   password: bcrypt.hashSync(u.password, 10),
