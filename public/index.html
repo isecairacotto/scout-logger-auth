@@ -897,64 +897,95 @@ ckTrackman.addEventListener('change', e => {
       }));
     }
 
-    finalSubmitBtn.addEventListener('click', ()=>{
-      const s = loadSession() || {};
-      const user = s.username || 'guest';
-      const K_EVENTS = keyEvents(user), K_PITCHES = keyPitches(user), K_PLAYERS = keyPlayers(user);
+finalSubmitBtn.addEventListener('click', ()=>{
+  const s = loadSession() || {};
+  const user = s.username || 'guest';
+  const K_EVENTS  = keyEvents(user);
+  const K_PITCHES = keyPitches(user);
+  const K_PLAYERS = keyPlayers(user);
 
-      const name = (eventName.value||'').trim() || 'Untitled';
-      const date = (eventDate.value||todayMDY()).trim();
-      const location = (eventLocation.value||'').trim();
-      const scout = (scoutName.value||s.fullName||user).trim();
+  const name     = (eventName.value||'').trim() || 'Untitled';
+  const date     = (eventDate.value||todayMDY()).trim();
+  const location = (eventLocation.value||'').trim();
+  const scout    = (scoutName.value||s.fullName||user).trim();
 
-      const rows = loadJSON(K_PITCHES, []);
-      if (!rows.length){ eventMsg.innerHTML='<div class="success warn">No pitches to save.</div>'; return; }
-
-      // Try to sync this event to the server (if logged in + online)
-(async () => {
-  try {
-    const sess = loadSession() || {};
-    if (navigator.onLine && sess.token && sess.token !== 'local') {
-      const payload = {
-        name,
-        date,
-        location,
-        scout,
-        rows,
-        dsp,
-        blast,
-        trackman
-      };
-      const r = await fetch('/api/events', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + sess.token
-        },
-        body: JSON.stringify(payload)
-      });
-      // Non-200 or non-JSON will throw into catch
-      const ct = (r.headers.get('content-type') || '').toLowerCase();
-      if (!r.ok || !ct.includes('application/json')) throw new Error('upload failed');
-      const j = await r.json();
-      // Optional: mark last event synced
-      // evts[evts.length - 1].cloudId = j.id;
-      // saveJSON(K_EVENTS, evts);
-    }
-  } catch (err) {
-    // Stay silent: offline or server blocked; local save already happened.
-    // You could show a tiny hint if you want:
-    // console.log('Cloud upload skipped:', err?.message || err);
+  const rows = loadJSON(K_PITCHES, []);
+  if (!rows.length){
+    eventMsg.innerHTML='<div class="success warn">No pitches to save.</div>';
+    return;
   }
-})();
 
+  // --- DSP meta (compute BEFORE server upload & save) ---
+  const dsp = dspToggle.classList.contains('active');
+  const blast = ckBlast.checked
+    ? Array.from(blastTeams.querySelectorAll('input:checked')).map(c=>c.value)
+    : [];
+  const trackman = ckTrackman.checked
+    ? Array.from(trackmanTeams.querySelectorAll('input:checked')).map(c=>c.value)
+    : [];
 
-      // DSP meta
-      const dsp = dspToggle.classList.contains('active');
-      const blast = ckBlast.checked ? Array.from(blastTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
-      const trackman = ckTrackman.checked ? Array.from(trackmanTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
+  // --- A) Save ROSTER snapshot into the event ---
+  const currentPlayers = loadJSON(K_PLAYERS, []); // <— roster snapshot
 
-      const evts = loadJSON(K_EVENTS, []);
+  // Save locally to History (always)
+  const evts = loadJSON(K_EVENTS, []);
+  const evt = {
+    id: Date.now(),
+    user,
+    name,
+    date,
+    location,
+    scout,
+    count: rows.length,
+    rows: rows.slice(),
+    players: currentPlayers.slice(),  // <— stores roster with this event
+    dsp, blast, trackman
+  };
+  evts.push(evt);
+  saveJSON(K_EVENTS, evts);
+
+  // Try to sync this event to the server (if logged in + online)
+  (async () => {
+    try {
+      const sess = loadSession() || {};
+      if (navigator.onLine && sess.token && sess.token !== 'local') {
+        const payload = {
+          name, date, location, scout,
+          rows, dsp, blast, trackman,
+          players: currentPlayers   // <— send roster to server too
+        };
+        const r = await fetch('/api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + sess.token
+          },
+          body: JSON.stringify(payload)
+        });
+        const ct = (r.headers.get('content-type') || '').toLowerCase();
+        if (!r.ok || !ct.includes('application/json')) throw new Error('upload failed');
+        const j = await r.json();
+        // (Optional) mark cloudId if you want: evt.cloudId = j.id; saveJSON(K_EVENTS, evts);
+      }
+    } catch (err) {
+      // Silent fallback; local save already done.
+      // console.log('Cloud upload skipped:', err?.message || err);
+    }
+  })();
+
+  // Clear working sets and UI
+  saveJSON(K_PITCHES, []);
+  saveJSON(K_PLAYERS, []);
+  playerNameInput.value=''; eventName.value=''; eventLocation.value=''; scoutName.value='';
+  // reset UI bits
+  ckBlast.checked=false; blastTeamWrap.style.display='none';
+  ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
+  dspToggle.classList.remove('active'); dspToggle.textContent='No'; dspChecklist.classList.remove('show');
+
+  eventMsg.innerHTML='<div class="success">Event submitted. Saved to History & cleared current log.</div>';
+  refreshSelects(); renderTable(); renderEventsTable();
+  setTimeout(()=>{ eventSection.style.display='none'; }, 1200);
+});
       evts.push({
         id: Date.now(),
         user,
