@@ -89,8 +89,8 @@
     <section id="view-login" class="card">
       <h2>Login</h2>
       <div class="grid cols-2">
-        <div><label>Username</label><input id="loginUser" type="text" placeholder="username" autocomplete="username" /></div>
-        <div><label>Password</label><input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" /></div>
+        <div><label>Username</label><input id="loginUser" type="text" placeholder="username" autocomplete="username" autocapitalize="none" spellcheck="false" inputmode="email" /></div>
+        <div><label>Password</label><input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" autocapitalize="none" autocorrect="none" spellcheck="false" /></div>
       </div>
       <div class="row" style="margin-top:10px">
         <button id="loginBtn" class="primary">Sign in</button>
@@ -324,7 +324,7 @@
 
   async function login(){
   loginMsg.textContent = '';
-  const username = loginUser.value.trim();
+  const username = loginUser.value.trim().toLowerCase();
   const password = loginPass.value.trim();
   if(!username || !password){
     loginMsg.textContent = 'Enter username and password';
