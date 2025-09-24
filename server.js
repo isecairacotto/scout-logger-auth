@@ -81,13 +81,6 @@ for (const u of RAW_USERS) {
   else seen.set(key, (prev.role === "admin" || u.role === "admin") ? { ...prev, ...u, role: "admin" } : u);
 }
 
-const USERS = Array.from(seen.values()).map(u => ({
-  username: u.username,
-  fullName: u.fullName,
-  role: u.role,
-  password: bcrypt.hashSync(u.password, 10),
-}));
-
 // Hash passwords at startup
 const USERS = Array.from(seen.values()).map(u => ({
   username: u.username.trim().toLowerCase(),
