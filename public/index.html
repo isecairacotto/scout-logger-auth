@@ -1068,6 +1068,32 @@ finalSubmitBtn.addEventListener('click', ()=>{
           saveJSON(keyPlayers(user), Array.isArray(e.players) ? e.players.slice() : [];
           
           document.querySelector('[data-tab="new"]').click();
+
+          if(e.dsp) {
+            dsp.Toggle.classList.add('active');
+            dsp.Toggle.textContent = 'Yes';
+            dsp.Toggle.setAttribute('aria-pressed', 'true');
+            dspChecklist.classList.add('Show');
+          } else {
+            dspToggle.classList.remove('active');
+            dspToggle.textContext = 'No';
+            dspToggle.setAttribute('aria-pressed', 'false);
+            dspChecklist.classList.remove('show');
+          }
+
+          if (Array.isArray(e.blast)) {
+            Array.from(blastTeams.querySelectorAll('input')).forEach(cb => {
+              cb.checked = e.blast.includes(cb.value);
+            });
+            blastTeamWrap.style.display = e.blast.length ? 'block' : 'none';
+          }
+          
+          if (Array.isArray(e.trackman)) {
+            Array.from(trackmanTeams.querySelectorAll('input')).forEach(cb => {
+              cb.checked = e.trackman.includes(cb.value);
+            });
+            trackmanTeamWrap.style.display = e.trackman.length ? 'block' : 'none';
+          }
           
           if (typeof window.reloadLoggerFromStorage === 'function') {
             window.reloadLoggerFromStorage();
