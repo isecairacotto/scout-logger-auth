@@ -1065,9 +1065,17 @@ finalSubmitBtn.addEventListener('click', ()=>{
         if (action==='open'){
           // load into New Event for editing
           saveJSON(K_PITCHES, e.rows.slice());
+          saveJSON(keyPlayers(user), Array.isArray(e.players) ? e.players.slice() : [];
+          
           document.querySelector('[data-tab="new"]').click();
+          
           if (typeof window.reloadLoggerFromStorage === 'function') {
             window.reloadLoggerFromStorage();
+          } else {
+
+            initLoggerOnce();
+            if (typeof refreshSelects === 'function') refreshSelects();
+            if (typeof renderTable === 'function') renderTable();
           }
           window.scrollTo({top:0,behavior:'smooth'});
         }
@@ -1201,12 +1209,17 @@ function adminListEventsFor(user){
         if (action==='open'){
           const s = loadSession(); if (!s){ alert('Please log in first.'); return; }
           saveJSON(keyPitches(s.username), e.rows.slice());
+          saveJSON(keyPlayers(s.username), Array.isArray(e.players) ? e.players.slice() : []);
           show(vScout);
           adminNewTab.classList.add('active'); 
           adminScoutsTab.classList.remove('active');
           adminScoutsView.classList.add('hidden'); 
           adminNewView.classList.remove('hidden');
           mountNewEventIntoAdmin();
+
+          initLoggerOnce();
+          refreshSelects();
+          renderTable();
           window.scrollTo({top:0,behavior:'smooth'});
         }
       });
