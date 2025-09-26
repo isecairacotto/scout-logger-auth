@@ -1178,6 +1178,9 @@ function initAdminUI(){
     adminScoutSelect.dataset.ready='1';
   }
 }
+
+<script>
+// --- Admin: cloud-first list + open + CSV (no "Delete" button) ---
 function adminListEventsFor(user){
   adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">Loading…</td></tr>`;
 
@@ -1198,7 +1201,6 @@ function adminListEventsFor(user){
         <td class="cell-actions">
           <button class="ghost" data-action="csv" data-id="${e.id}">CSV</button>
           <button class="ghost" data-action="open" data-id="${e.id}">Open</button>
-          <button class="ghost" data-action="del" data-id="${e.id}">Delete</button>
         </td>`;
       adminEventsTableBody.appendChild(tr);
     });
@@ -1211,7 +1213,7 @@ function adminListEventsFor(user){
 
         if (action==='csv'){
           const headers = ['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
-          const rows = e.rows.map(r=>({
+          const rows = (e.rows || []).map(r=>({
             date:e.date,event:e.name,location:e.location,scout:e.scout,
             time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,
             action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin
@@ -1219,23 +1221,14 @@ function adminListEventsFor(user){
           download(`${user} - ${e.date} ${e.name}.csv`, toCSV(rows, headers));
         }
 
-        if (action==='del'){
-          // Only deletes local cache, not server copy
-          const local = loadJSON(keyEvents(user), []);
-          const lidx = local.findIndex(x=>x.id===id);
-          if (lidx>=0){
-            if (confirm(`Delete local copy of ${e.name}?`)){
-              local.splice(lidx,1);
-              saveJSON(keyEvents(user), local);
-            }
-          }
-          render(list.filter(ev=>ev.id !== id));
-        }
-
         if (action==='open'){
           const s = loadSession(); if (!s){ alert('Please log in first.'); return; }
-          saveJSON(keyPitches(s.username), e.rows.slice());
+
+          // Restore BOTH pitches and roster snapshot
+          saveJSON(keyPitches(s.username), (e.rows || []).slice());
           saveJSON(keyPlayers(s.username), Array.isArray(e.players) ? e.players.slice() : []);
+
+          // Jump to the New Event UI inside Admin
           show(vScout);
           adminNewTab.classList.add('active'); 
           adminScoutsTab.classList.remove('active');
@@ -1243,16 +1236,19 @@ function adminListEventsFor(user){
           adminNewView.classList.remove('hidden');
           mountNewEventIntoAdmin();
 
-          initLoggerOnce();
-          refreshSelects();
-          renderTable();
+          // Safely rebuild logger from storage
+          if (typeof window.reloadLoggerFromStorage === 'function') {
+            window.reloadLoggerFromStorage();
+          } else {
+            initLoggerOnce();
+          }
           window.scrollTo({top:0,behavior:'smooth'});
         }
       });
     });
   };
 
-  // Cloud-first fetch
+  // Cloud-first fetch (admin + token + online), fallback to local cache
   (async () => {
     const sess = loadSession() || {};
     if (navigator.onLine && sess.role === 'admin' && sess.token && sess.token !== 'local') {
@@ -1274,35 +1270,71 @@ function adminListEventsFor(user){
   })();
 }
 
-  adminScoutsTab.addEventListener('click', ()=>{
-  show(vAdmin); // <-- bring admin shell back if we were in scout view
+// --- Admin tab switches (unchanged behavior) ---
+adminScoutsTab.addEventListener('click', ()=>{
+  show(vAdmin);
   adminScoutsTab.classList.add('active'); 
   adminNewTab.classList.remove('active');
   adminScoutsView.classList.remove('hidden'); 
   adminNewView.classList.add('hidden');
-  unmountNewEventBackToScout(); // put New Event panel back under the Scout view
+  unmountNewEventBackToScout();
 });
-  adminNewTab.addEventListener('click', ()=>{
-  show(vAdmin); // <-- stay inside admin shell
+
+adminNewTab.addEventListener('click', ()=>{
+  show(vAdmin);
   adminNewTab.classList.add('active'); 
   adminScoutsTab.classList.remove('active');
   adminScoutsView.classList.add('hidden'); 
   adminNewView.classList.remove('hidden');
-  mountNewEventIntoAdmin(); // show the same New Event UI inside admin tab
+  mountNewEventIntoAdmin();
   window.scrollTo({top:0,behavior:'smooth'});
 });
-  adminScoutSelect.addEventListener('change', ()=>{
-    const u = adminScoutSelect.value;
-    if (!u) { adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">Pick a scout to view their local history.</td></tr>`; return; }
-    adminListEventsFor(u);
-  });
-  adminExportAllBtn.addEventListener('click', ()=>{
-    const u = adminScoutSelect.value; if (!u){ alert('Pick a scout first'); return; }
-    const evts = loadJSON(keyEvents(u), []); if (!evts.length){ alert(`No events for ${u}`); return; }
-    const headers = ['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
-    const rows = evts.flatMap(e => e.rows.map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin})));
-    download(`${u}-all-events.csv`, toCSV(rows, headers));
-  });
+
+// --- Admin: choose scout -> load events (cloud-first) ---
+adminScoutSelect.addEventListener('change', ()=>{
+  const u = adminScoutSelect.value;
+  if (!u) {
+    adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">Pick a scout to view their history.</td></tr>`;
+    return;
+  }
+  adminListEventsFor(u);
+});
+
+// --- Admin: Export All (cloud-first with local fallback) ---
+adminExportAllBtn.addEventListener('click', async ()=>{
+  const u = adminScoutSelect.value; 
+  if (!u){ alert('Pick a scout first'); return; }
+
+  const sess = loadSession() || {};
+  let list = [];
+
+  if (navigator.onLine && sess.token && sess.token !== 'local' && sess.role === 'admin'){
+    try{
+      const r = await fetch(`/api/events?user=${encodeURIComponent(u)}`, {
+        headers: { 'Authorization': 'Bearer ' + sess.token }
+      });
+      const ct = (r.headers.get('content-type') || '').toLowerCase();
+      if (r.ok && ct.includes('application/json')){
+        const j = await r.json();
+        list = j.events || [];
+      }
+    }catch{}
+  }
+
+  if (!list.length) list = loadJSON(keyEvents(u), []);
+
+  if (!list.length){ alert(`No events for ${u}`); return; }
+
+  const headers = ['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
+  const rows = list.flatMap(e => (e.rows || []).map(r=>({
+    date:e.date,event:e.name,location:e.location,scout:e.scout,
+    time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,
+    action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin
+  })));
+  download(`${u}-all-events.csv`, toCSV(rows, headers));
+});
+</script>
+
 
   // ---------- Boot ----------
   document.getElementById('topbar').textContent='';
