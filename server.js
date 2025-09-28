@@ -169,6 +169,7 @@ app.post("/api/events", auth, (req, res) => {
     dsp = false,
     blast = [],
     trackman = [],
+    players = [],
   } = req.body || {};
 
   if (!date || !Array.isArray(rows) || rows.length === 0) {
@@ -187,6 +188,7 @@ app.post("/api/events", auth, (req, res) => {
     dsp: !!dsp,
     blast: Array.isArray(blast) ? blast : [],
     trackman: Array.isArray(trackman) ? trackman : [],
+    players: Array.isArray(players) ? players : [],
     createdAt: new Date().toISOString(),
   };
 
