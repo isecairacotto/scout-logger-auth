@@ -988,6 +988,19 @@ function renderEventsTable(){
       const rows=list.flatMap(e=>(e.rows||[]).map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin})));
       download(`${u}-all-events.csv`, toCSV(rows, headers));
     });
+    
+    // ---------- Offline queue flush helpers ----------
+    function flushApiQueue() {
+      if (navigator.serviceWorker?.controller) {
+        navigator.serviceWorker.controller.postMessage('flush-api-queue');
+      }
+    }
+    
+    window.addEventListener('online', flushApiQueue);
+    window.addEventListener('focus', flushApiQueue);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) flushApiQueue();
+    });
 
     // ---------- Boot ----------
     document.getElementById('topbar').textContent='';
