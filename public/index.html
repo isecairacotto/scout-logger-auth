@@ -734,79 +734,124 @@
     } // initLoggerOnce
 
     // ---------- History rendering + CSV ----------
-    function renderEventsTable(){
-      const s=loadSession()||{};
-      const user=s.username||'guest';
-      const K_EVENTS=keyEvents(user);
-      const evts=loadJSON(K_EVENTS, []);
-      eventsTableBody.innerHTML='';
-      if(!evts.length){ eventsTableBody.innerHTML=`<tr><td colspan="6" class="hint">No events yet.</td></tr>`; return; }
-      evts.sort((a,b)=>b.id-a.id).forEach(e=>{
-        const tr=document.createElement('tr');
-        tr.innerHTML=`
-          <td>${e.date}</td>
-          <td>${e.name}</td>
-          <td>${e.location||''}</td>
-          <td>${e.scout||''}</td>
-          <td>${e.count}</td>
-          <td class="cell-actions">
-            <button class="ghost" data-action="csv"  data-id="${e.id}">CSV</button>
-            <button class="ghost" data-action="open" data-id="${e.id}">Open</button>
-          </td>`;
-        eventsTableBody.appendChild(tr);
-      });
-      window.renderEventsTable=renderEventsTable;
+function renderEventsTable(){
+  const s = loadSession() || {};
+  const user = s.username || 'guest';
+  const K_EVENTS = keyEvents(user);
 
-      eventsTableBody.querySelectorAll('button').forEach(b=>{
-        b.addEventListener('click', ()=>{
-          const s=loadSession()||{};
-          const user=s.username||'guest';
-          const K_EVENTS=keyEvents(user), K_PITCHES=keyPitches(user);
-          const id=Number(b.dataset.id), action=b.dataset.action;
-          const list=loadJSON(K_EVENTS, []);
-          const idx=list.findIndex(x=>x.id===id);
-          if(idx<0) return;
-          const e=list[idx];
+  // show a quick loading row while we try cloud
+  eventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">Loading…</td></tr>`;
 
-          if(action==='csv'){
-            const headers=['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
-            const rows=e.rows.map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin}));
-            download(`${e.date} ${e.name}.csv`, toCSV(rows, headers));
-          }
-          if(action==='open'){
-            saveJSON(K_PITCHES, e.rows.slice());
-            saveJSON(keyPlayers(user), Array.isArray(e.players) ? e.players.slice() : []);
+  (async () => {
+    let evts = [];
+    const canCloud = navigator.onLine && s.token && s.token !== 'local';
 
-            document.querySelector('[data-tab="new"]').click();
-
-            if(e.dsp){
-              dspToggle.classList.add('active');
-              dspToggle.textContent='Yes';
-              dspToggle.setAttribute('aria-pressed','true');
-              dspChecklist.classList.add('show');
-            }else{
-              dspToggle.classList.remove('active');
-              dspToggle.textContent='No';
-              dspToggle.setAttribute('aria-pressed','false');
-              dspChecklist.classList.remove('show');
-            }
-
-            if(Array.isArray(e.blast)){
-              Array.from(blastTeams.querySelectorAll('input')).forEach(cb=>{ cb.checked = e.blast.includes(cb.value); });
-              blastTeamWrap.style.display = e.blast.length ? 'block' : 'none';
-            }
-            if(Array.isArray(e.trackman)){
-              Array.from(trackmanTeams.querySelectorAll('input')).forEach(cb=>{ cb.checked = e.trackman.includes(cb.value); });
-              trackmanTeamWrap.style.display = e.trackman.length ? 'block' : 'none';
-            }
-
-            if(typeof window.reloadLoggerFromStorage==='function'){ window.reloadLoggerFromStorage(); }
-            else { initLoggerOnce(); }
-            window.scrollTo({top:0,behavior:'smooth'});
-          }
+    // 1) Cloud-first: fetch /api/events with Bearer token
+    if (canCloud) {
+      try {
+        const r = await fetch('/api/events', {
+          headers: { 'Authorization': 'Bearer ' + s.token }
         });
-      });
+        const ct = (r.headers.get('content-type') || '').toLowerCase();
+        if (r.ok && ct.includes('application/json')) {
+          const j = await r.json();
+          evts = Array.isArray(j.events) ? j.events : [];
+          // persist to local so it appears offline next time
+          saveJSON(K_EVENTS, evts);
+        }
+      } catch {
+        // ignore; we'll fall back to local cache
+      }
     }
+
+    // 2) Local fallback if cloud unavailable/empty
+    if (!evts.length) evts = loadJSON(K_EVENTS, []);
+
+    // 3) Render table exactly like before
+    eventsTableBody.innerHTML = '';
+    if (!evts.length) {
+      eventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">No events yet.</td></tr>`;
+      return;
+    }
+
+    evts.sort((a,b)=> b.id - a.id).forEach(e=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.date}</td>
+        <td>${e.name}</td>
+        <td>${e.location||''}</td>
+        <td>${e.scout||''}</td>
+        <td>${e.count}</td>
+        <td class="cell-actions">
+          <button class="ghost" data-action="csv"  data-id="${e.id}">CSV</button>
+          <button class="ghost" data-action="open" data-id="${e.id}">Open</button>
+        </td>`;
+      eventsTableBody.appendChild(tr);
+    });
+
+    // keep the handler behavior you already had
+    eventsTableBody.querySelectorAll('button').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const id = Number(b.dataset.id), action = b.dataset.action;
+        const list = evts; // use the list we just rendered
+        const idx = list.findIndex(x=>x.id===id);
+        if (idx<0) return;
+        const e = list[idx];
+
+        if (action==='csv'){
+          const headers = ['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
+          const rows = (e.rows || []).map(r=>({
+            date:e.date,event:e.name,location:e.location,scout:e.scout,
+            time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,
+            action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin
+          }));
+          download(`${e.date} ${e.name}.csv`, toCSV(rows, headers));
+        }
+
+        if (action==='open'){
+          // restore rows AND roster snapshot (players) into the working sets
+          saveJSON(keyPitches(user), (e.rows || []).slice());
+          saveJSON(keyPlayers(user), Array.isArray(e.players) ? e.players.slice() : []);
+
+          // show New tab and rebuild UI (unchanged from your fixed version)
+          document.querySelector('[data-tab="new"]').click();
+
+          if (e.dsp){
+            dspToggle.classList.add('active');
+            dspToggle.textContent='Yes';
+            dspToggle.setAttribute('aria-pressed','true');
+            dspChecklist.classList.add('show');
+          } else {
+            dspToggle.classList.remove('active');
+            dspToggle.textContent='No';
+            dspToggle.setAttribute('aria-pressed','false');
+            dspChecklist.classList.remove('show');
+          }
+
+          if (Array.isArray(e.blast)) {
+            Array.from(blastTeams.querySelectorAll('input')).forEach(cb=>{
+              cb.checked = e.blast.includes(cb.value);
+            });
+            blastTeamWrap.style.display = e.blast.length ? 'block' : 'none';
+          }
+          if (Array.isArray(e.trackman)) {
+            Array.from(trackmanTeams.querySelectorAll('input')).forEach(cb=>{
+              cb.checked = e.trackman.includes(cb.value);
+            });
+            trackmanTeamWrap.style.display = e.trackman.length ? 'block' : 'none';
+          }
+
+          if (typeof window.reloadLoggerFromStorage === 'function') {
+            window.reloadLoggerFromStorage();
+          } else {
+            initLoggerOnce();
+          }
+          window.scrollTo({top:0,behavior:'smooth'});
+        }
+      });
+    });
+  })();
+}
 
     exportAllCsvBtn.addEventListener('click', ()=>{
       const s=loadSession()||{};
