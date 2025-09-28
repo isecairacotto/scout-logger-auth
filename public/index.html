@@ -712,11 +712,25 @@
                 body:JSON.stringify(payload)
               });
               const ct=(r.headers.get('content-type')||'').toLowerCase();
-              if(!r.ok || !ct.includes('application/json')) throw new Error('upload failed');
-              await r.json();
-            }
-          }catch(_){}
-        })();
+              if (r.status === 202 && ct.includes('application/json')) {
+                const j = await r.json();
+                if (j.queded) {
+                  eventMsg.innerHTML = '<div class="success">Saved locally - will sync when online.</div>';
+                }
+              } else if (!r.ok || !ct.includes('application/json')) {
+        // treat as offline; SW may still queue it
+        eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
+      }
+      // If r.ok 200/201 -> nothing extra to show
+    } else {
+      // offline now; SW queues it, we show the same hint
+      eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
+    }
+  } catch {
+    // Network error; SW likely queued it already
+    eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
+  }
+})();
 
         // Clear working sets and UI
         saveJSON(K_PITCHES,[]); saveJSON(K_PLAYERS,[]);
