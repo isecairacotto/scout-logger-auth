@@ -450,6 +450,8 @@
       }
     }
 
+    console.log("DEBUG session:", loadSession());
+
     loginBtn.addEventListener('click', login);
     loginUser.addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
     loginPass.addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
@@ -706,11 +708,17 @@
             const sess=loadSession()||{};
             if(navigator.onLine && sess.token && sess.token!=='local'){
               const payload={ name,date,location,scout, rows, dsp,blast,trackman, players: currentPlayers };
+              console.log("DEBUG posting event payload", payload);
+              console.log("DEBUG using token", sess.token);
+              
               const r=await fetch('/api/events', {
                 method:'POST',
                 headers:{'Content-Type':'application/json','Authorization':'Bearer '+sess.token},
                 body:JSON.stringify(payload)
               });
+
+              console.log("DEBUG /api/events response status:", r.status);
+              
               const ct=(r.headers.get('content-type')||'').toLowerCase();
               if (r.status === 202 && ct.includes('application/json')) {
                 const j = await r.json();
