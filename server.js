@@ -14,6 +14,7 @@ const fs = require("fs");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SECRET_KEY = process.env.JWT_SECRET || "dev-only-secret";
+console.log("[DEBUG] JWT_SECRET loaded:", process.env.JWT_SECRET ? "env var set" : "FELL BACK TO DEFAULT");
 
 // --------- Middleware ----------
 app.use(express.json());
