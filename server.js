@@ -192,6 +192,10 @@ app.post("/api/events", auth, (req, res) => {
     createdAt: new Date().toISOString(),
   };
 
+  console.log("DEBUG received EVENT FROM", u,
+              "named:", name,
+              "rows:", rows.length);
+
   EVENTS.push(evt);
   saveEvents(EVENTS);
   res.json({ ok: true, id: evt.id });
