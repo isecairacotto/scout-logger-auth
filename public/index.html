@@ -297,6 +297,26 @@
 
   <script src="/db.js"></script>
   <script>
+
+    // ---------- API helper ----------
+    async function apiFetch(url, opts = {}) {
+      const s = loadSession() || {};
+      const headers = {
+        ...(opts.headers || {}),
+        ...(s.token && s.token !== 'local'
+            ? { Authorization: "Bearer ' + s.token }
+            : {})
+      };
+      const res = await fetch(url, { ...opts, headers });
+      if (res.status === 401) {
+        clear();
+        alert('Session expired or invalid. Please sign in again.');
+        routeByRole();
+        throw new Error('Unauthorized');
+      }
+      return res;
+    }
+    
   (function(){
     // ---------- Service Worker ----------
     if ('serviceWorker' in navigator) {
@@ -706,7 +726,7 @@
         (async()=>{
           try{
             const sess=loadSession()||{};
-            if(navigator.onLine && sess.token && sess.token!=='local'){
+            if (sess.token && sess.token!=='local') {
               const payload={ name,date,location,scout, rows, dsp,blast,trackman, players: currentPlayers };
               console.log("DEBUG posting event payload", payload);
               console.log("DEBUG using token", sess.token);
@@ -771,9 +791,7 @@ function renderEventsTable(){
     // 1) Cloud-first: fetch /api/events with Bearer token
     if (canCloud) {
       try {
-        const r = await fetch('/api/events', {
-          headers: { 'Authorization': 'Bearer ' + s.token }
-        });
+        const r = await apiFetch('/api/events');
         const ct = (r.headers.get('content-type') || '').toLowerCase();
         if (r.ok && ct.includes('application/json')) {
           const j = await r.json();
@@ -971,7 +989,7 @@ function renderEventsTable(){
         const sess=loadSession()||{};
         if(navigator.onLine && sess.role==='admin' && sess.token && sess.token!=='local'){
           try{
-            const r=await fetch(`/api/events?user=${encodeURIComponent(user)}`, { headers:{ 'Authorization':'Bearer '+sess.token }});
+            const r=await apiFetch(`/api/events?user=${encodeURIComponent(user)}`);
             const ct=(r.headers.get('content-type')||'').toLowerCase();
             if(r.ok && ct.includes('application/json')){ const data=await r.json(); render(data.events||[]); return; }
           }catch(_){}
