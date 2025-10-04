@@ -160,6 +160,8 @@ function auth(req, res, next) {
 app.post("/api/events", auth, (req, res) => {
   const u = req.user?.username;
   if (!u) return res.status(403).json({ message: "Forbidden" });
+  console.log("[SERVER] Received /api/events from", u, "body keys:", Object.keys(req.body));
+
 
   const {
     name = "Untitled",
@@ -199,6 +201,7 @@ app.post("/api/events", auth, (req, res) => {
 
   EVENTS.push(evt);
   saveEvents(EVENTS);
+  console.log("[SERVER] Saved event:", evt.name, "for", evt.user, "now total events:", EVENTS.length);
   res.json({ ok: true, id: evt.id });
 });
 
