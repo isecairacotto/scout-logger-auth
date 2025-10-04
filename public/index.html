@@ -298,6 +298,17 @@
   <script src="/db.js"></script>
   <script>
 
+    function debugBanner(msg){
+      let el = document.getElementById('dbg');
+      if (!el) {
+        el = document.createElement('pre');
+        el.id = 'dbg';
+        el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow:auto;background:#111;color:#0f0;padding:8px;font:12px/1.4 monospace;z-index:999999';
+        document.body.appendChild(el);
+      }
+      el.textContent = (el.textContent + '\n' + msg).slice(-4000);
+    }
+
     // ---------- API helper ----------
     async function apiFetch(url, opts = {}) {
       const s = loadSession() || {};
@@ -309,7 +320,7 @@
       };
       const res = await fetch(url, { ...opts, headers });
       if (res.status === 401) {
-        clear();
+        clearSession();
         alert('Session expired or invalid. Please sign in again.');
         routeByRole();
         throw new Error('Unauthorized');
@@ -418,6 +429,7 @@
       if(!navigator.onLine){
         loginMsg.textContent='Offline: local mode enabled';
         saveSession({ token:'local', role:'scout', fullName:username, username });
+        debugBanner('LOGIN LOCAL MODE tokenStarts=local');
         routeByRole(); return;
       }
 
@@ -436,6 +448,8 @@
         const data=await res.json();
         saveSession({ token:data.token, role:data.role, fullName:data.fullName, username });
         routeByRole();
+        const s = loadSession() || {};
+        debugBanner('LOGIN OK role=' + s.role + ' tokenStarts=' + String(s.token).slice(0,20));
       }catch(e){
         loginMsg.textContent='Network error — using local mode';
         saveSession({ token:'local', role:'scout', fullName:username, username });
@@ -730,6 +744,8 @@
               const payload={ name,date,location,scout, rows, dsp,blast,trackman, players: currentPlayers };
               console.log("DEBUG posting event payload", payload);
               console.log("DEBUG using token", sess.token);
+
+              debugBanner('SUBMIT tokenStarts=' + String(sess.token).slice(0,20));
               
               const r=await fetch('/api/events', {
                 method:'POST',
