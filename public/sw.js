@@ -1,5 +1,5 @@
 /// <reference lib="WebWorker" />
-const SW_VERSION = 'v14'; // bump to update clients
+const SW_VERSION = 'v16'; // bump to update clients
 
 const APP_SHELL = [
   '/',
