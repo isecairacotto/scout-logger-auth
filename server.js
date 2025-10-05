@@ -210,12 +210,17 @@ app.get("/api/events", auth, (req, res) => {
   const me = req.user; // { username, role }
   const { user } = req.query;
 
+  console.log("[SERVER] GET /api/events by", me?.username, "role", me?.role, "query user=", user);
+
   if (me.role !== "admin" && user && user !== me.username) {
     return res.status(403).json({ message: "Forbidden" });
   }
 
   const target = user || me.username;
   const list = EVENTS.filter(e => e.user === target).sort((a,b) => b.id - a.id);
+
+  console.log("[SERVER] Returning", list.length, "events for", target);
+
   res.json({ user: target, events: list });
 });
 
