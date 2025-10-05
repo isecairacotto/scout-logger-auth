@@ -1,5 +1,5 @@
 /// <reference lib="WebWorker" />
-const SW_VERSION = 'v16'; // bump to update clients
+const SW_VERSION = 'v17'; // bumped to ensure clients update
 
 const APP_SHELL = [
   '/',
@@ -104,7 +104,7 @@ self.addEventListener('sync', (event) => {
   }
 });
 
-// Helper: simple SW-side stale-while-revalidate for GET
+// Helper: simple SW-side stale-while-revalidate for GET (non-API)
 async function staleWhileRevalidate(req) {
   const cache = await caches.open(SW_VERSION);
   const cached = await cache.match(req);
@@ -164,6 +164,26 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
+  // ---- API requests (GET/HEAD/etc): NETWORK-FIRST, do not cache responses ----
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) {
+    e.respondWith((async () => {
+      try {
+        // Always try the network first for authenticated/dynamic data
+        return await fetch(req);
+      } catch {
+        // If offline, try a cache fallback ONLY if one exists (usually none for APIs)
+        const cached = await caches.match(req);
+        if (cached) return cached;
+
+        return new Response(JSON.stringify({ ok: false, offline: true }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    })());
+    return;
+  }
+
   // ---- Navigations: online-first, fallback to shell ----
   if (req.mode === 'navigate') {
     e.respondWith(
@@ -202,14 +222,6 @@ self.addEventListener('fetch', (e) => {
         }).catch(() => caches.match('/index.html'))
       )
     );
-    return;
-  }
-
-  // ---- API GETs: stale-while-revalidate (but never cache auth endpoints) ----
-  const isApiGet = url.origin === self.location.origin && url.pathname.startsWith('/api/');
-  const isAuth = /\/api\/(login|users|refresh|logout)/.test(url.pathname);
-  if (isApiGet && !isAuth) {
-    e.respondWith(staleWhileRevalidate(req));
     return;
   }
 
