@@ -758,7 +758,7 @@
               const ct=(r.headers.get('content-type')||'').toLowerCase();
               if (r.status === 202 && ct.includes('application/json')) {
                 const j = await r.json();
-                if (j.queded) {
+                if (j.quedued) {
                   eventMsg.innerHTML = '<div class="success">Saved locally - will sync when online.</div>';
                 }
               } else if (!r.ok || !ct.includes('application/json')) {
