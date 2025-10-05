@@ -939,19 +939,34 @@ function renderEventsTable(){
     const KNOWN_USERS=["faffanis","malvarez","mberumen","fbreton","scabral","jcabrera","jcalderon","pciriaco","tclaus","jcruz","rcubillan","jdavis","jfitzpatrick","egomez","mgroopman","jhernandez","jkaregeannes","jkim","mlaureano","llin","wlobo","kmatsumoto","emedina","amejia","rmendoza","rmora","cmorillo","rmotooka","enanita","dneuman","cocando","rpino","eramirez","arequena","hrincones","mrodriguez","eromero","rsaggiadi","lsambo","gschilz","czamora","mcuellar","cschneider","isecairacotto"];
     function initAdminUI(){
       if(adminScoutSelect.dataset.ready) return;
-      adminScoutSelect.innerHTML='';
-      const add=(v,t)=>{ const o=document.createElement('option'); o.value=v; o.text=t; adminScoutSelect.add(o); };
-      add('','— select scout —');
+      
+      adminScoutSelect.innerHTML = '';
+      const add = (value, label) => {
+        const o = document.createElement('option');
+        o.value = (value || '').trim().toLowerCase();   // VALUE = username
+        o.textContent = label || value;                 // LABEL = fullName
+        
+        adminScoutSelect.add(o);
+      };
+      
+      add('', '— select scout —');
 
-      fetch('/api/users', { headers:{ 'Authorization':'Bearer '+(loadSession()?.token||'') }})
-        .then(r=>r.ok?r.json():null)
-        .then(list=>{
-          if(list && Array.isArray(list)){ list.forEach(u=>add(u.username, u.fullName||u.username)); }
-          else { KNOWN_USERS.forEach(u=>add(u,u)); }
+
+      fetch('/api/users', { headers:{ 'Authorization':'Bearer ' + (loadSession()?.token || '') }})
+        .then(r => r.ok ? r.json() : null)
+        .then(list => {
+          if (Array.isArray(list)) {
+            list.forEach(u => add(u.username, u.fullName || u.username));
+          } else {
+            // fallback list of known users (usernames)
+            KNOWN_USERS.forEach(u => add(u, u));
+          }
         })
-        .catch(()=>{ KNOWN_USERS.forEach(u=>add(u,u)); });
-
-      adminScoutSelect.dataset.ready='1';
+        .catch(() => {
+          KNOWN_USERS.forEach(u => add(u, u));
+        });
+      
+      adminScoutSelect.dataset.ready = '1';
     }
 
     function adminListEventsFor(user){
@@ -1027,23 +1042,67 @@ function renderEventsTable(){
       mountNewEventIntoAdmin();
       window.scrollTo({top:0,behavior:'smooth'});
     });
-    adminScoutSelect.addEventListener('change', ()=>{ const u=adminScoutSelect.value; if(!u){ adminEventsTableBody.innerHTML=`<tr><td colspan="6" class="hint">Pick a scout to view their history.</td></tr>`; return; } adminListEventsFor(u); });
-    adminExportAllBtn.addEventListener('click', async ()=>{
-      const u=adminScoutSelect.value; if(!u){ alert('Pick a scout first'); return; }
-      const sess=loadSession()||{}; let list=[];
-      if(navigator.onLine && sess.token && sess.token!=='local' && sess.role==='admin'){
-        try{
-          const r=await fetch(`/api/events?user=${encodeURIComponent(u)}`, { headers:{ 'Authorization':'Bearer '+sess.token }});
-          const ct=(r.headers.get('content-type')||'').toLowerCase();
-          if(r.ok && ct.includes('application/json')){ const j=await r.json(); list=j.events||[]; }
-        }catch(_){}
+    adminScoutSelect.addEventListener('change', () => {
+      const opt   = adminScoutSelect.options[adminScoutSelect.selectedIndex];
+      const raw   = (opt?.value || '').trim();              // may be username or full name
+      const label = (opt?.textContent || '').trim();        // full name label
+      // Normalize: prefer a value without spaces; otherwise fall back to lowercased raw
+      const u = raw && !raw.includes(' ')
+        ? raw.toLowerCase()
+        : (opt?.dataset?.username ? String(opt.dataset.username).toLowerCase() : raw.toLowerCase());
+      
+      if (!u) {
+        adminEventsTableBody.innerHTML =
+          `<tr><td colspan="6" class="hint">Pick a scout to view their history.</td></tr>`;
+        return;
       }
-      if(!list.length) list=loadJSON(keyEvents(u), []);
-      if(!list.length){ alert(`No events for ${u}`); return; }
-      const headers=['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
-      const rows=list.flatMap(e=>(e.rows||[]).map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin})));
-      download(`${u}-all-events.csv`, toCSV(rows, headers));
+      adminListEventsFor(u);
     });
+    
+    adminExportAllBtn.addEventListener('click', async () => {
+      const opt   = adminScoutSelect.options[adminScoutSelect.selectedIndex];
+      const raw   = (opt?.value || '').trim();
+      const label = (opt?.textContent || '').trim();
+      const u     = raw && !raw.includes(' ')
+        ? raw.toLowerCase()
+        : (opt?.dataset?.username ? String(opt.dataset.username).toLowerCase() : raw.toLowerCase());
+      
+      if (!u) { alert('Pick a scout first'); return; }
+      
+      const sess = loadSession() || {};
+      let list = [];
+      
+      if (navigator.onLine && sess.token && sess.token !== 'local' && sess.role === 'admin') {
+        try {
+          const r  = await fetch(`/api/events?user=${encodeURIComponent(u)}`, {
+            headers: { 'Authorization': 'Bearer ' + sess.token }
+          });
+          const ct = (r.headers.get('content-type') || '').toLowerCase();
+          if (r.ok && ct.includes('application/json')) {
+            const j = await r.json();
+            list = j.events || [];
+          }
+        } catch (_) {}
+      }
+
+  // Local fallback: try username key first, then legacy key by full name label
+  if (!list.length) {
+    list = loadJSON(keyEvents(u), []);
+    if (!list.length && label) list = loadJSON(keyEvents(label), []); // legacy cache
+  }
+
+  if (!list.length) { alert(`No events for ${label || u}`); return; }
+
+  const headers = ['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
+  const rows = list.flatMap(e => (e.rows || []).map(r => ({
+    date:e.date, event:e.name, location:e.location, scout:e.scout,
+    time:r.time, pitcher:r.pitcher, hitter:r.hitter, zone:r.zone,
+    action:r.action, pitchType:r.pitchType, velo:r.velo, spin:r.spin
+  })));
+
+  // Use the pretty label if available for the filename
+  download(`${(label || u).replace(/\s+/g,'_')}-all-events.csv`, toCSV(rows, headers));
+});
     
     // ---------- Offline queue flush helpers ----------
     function flushApiQueue() {
