@@ -205,23 +205,53 @@ app.post("/api/events", auth, (req, res) => {
   res.json({ ok: true, id: evt.id });
 });
 
-// GET /api/events?user=username  (admin can fetch any; scouts only themselves)
+const FULLNAME_TO_USERNAME = new Map(
+  USERS.map(u => [(u.fullName || '').trim().toLowerCase(), u.username])
+);
+
+// ---- GET /api/events (admin can fetch any; scouts only themselves)
 app.get("/api/events", auth, (req, res) => {
   const me = req.user; // { username, role }
-  const { user } = req.query;
+  let { user } = req.query;
 
-  console.log("[SERVER] GET /api/events by", me?.username, "role", me?.role, "query user=", user);
+  // Normalize requested user:
+  // - accept username (any case) OR full name
+  // - fall back to requester if none
+  const raw = (user || me.username || "").trim();
+  const lcRaw = raw.toLowerCase();
+  const normalized = FULLNAME_TO_USERNAME.get(lcRaw) || lcRaw; // final username (lowercased)
 
-  if (me.role !== "admin" && user && user !== me.username) {
+  console.log("[SERVER] GET /api/events by", me?.username, "role", me?.role, "query raw=", raw, "-> normalized=", normalized);
+
+  // Authz: non-admin can only ask for themselves (after normalization)
+  if (me.role !== "admin" && normalized !== me.username) {
     return res.status(403).json({ message: "Forbidden" });
   }
 
-  const target = user || me.username;
-  const list = EVENTS.filter(e => e.user === target).sort((a,b) => b.id - a.id);
+  // Tolerant matching for legacy data:
+  // - e.user stored as username (normal case)
+  // - e.user accidentally stored as full name (legacy)
+  // - e.scout holds display full name; map that too
+  const list = EVENTS.filter(e => {
+    const eu = (e.user || "").trim().toLowerCase();
+    const es = (e.scout || "").trim().toLowerCase();
 
-  console.log("[SERVER] Returning", list.length, "events for", target);
+    // exact username match
+    if (eu === normalized) return true;
 
-  res.json({ user: target, events: list });
+    // legacy: e.user saved as full name -> map to username
+    const euAsUsername = FULLNAME_TO_USERNAME.get(eu);
+    if (euAsUsername && euAsUsername === normalized) return true;
+
+    // very legacy/tolerant: match by scout full name label
+    const esAsUsername = FULLNAME_TO_USERNAME.get(es);
+    if (esAsUsername && esAsUsername === normalized) return true;
+
+    return false;
+  }).sort((a, b) => b.id - a.id);
+
+  console.log("[SERVER] Returning", list.length, "events for", normalized);
+  res.json({ user: normalized, events: list });
 });
 
 // --------- SPA fallback (after static + API) ----------
