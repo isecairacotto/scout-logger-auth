@@ -112,6 +112,14 @@ function saveEvents(list) {
 }
 let EVENTS = loadEvents(); // [{ id, user, name, date, location, scout, count, rows, dsp, blast, trackman, createdAt }]
 
+// No-cache for all API responses
+app.use('/api', (_req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 // --------- API routes ----------
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
