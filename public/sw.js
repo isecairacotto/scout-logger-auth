@@ -57,7 +57,7 @@ async function drainQueue() {
       const res = await fetch(url, {
         method,
         headers: new Headers(headers || {}),
-        body: body ? (headers && headers['Content-Type'] === 'application/json'
+        body: body ? (headers && (headers['content-type'] || '').toLowerCase().includes('application/json')
           ? JSON.stringify(body)
           : body) : undefined,
         credentials: 'same-origin'
@@ -141,13 +141,13 @@ self.addEventListener('fetch', (e) => {
       } catch (_) {
         // serialize minimal request for queue
         let body = null;
-        if (req.headers.get('Content-Type')?.includes('application/json')) {
+        if ((req.headers.get('Content-Type') || '').toLowerCase().includes('application/json')) {
           try { body = await req.clone().json(); } catch { body = null; }
         } else {
           try { body = await req.clone().text(); } catch { body = null; }
         }
         const headers = {};
-        req.headers.forEach((v, k) => { headers[k] = v; });
+        req.headers.forEach((v, k) => { headers[k.toLowerCase()] = v; });
 
         await queueRequest({ url: req.url, method: req.method, headers, body });
         // attempt to register background sync
@@ -164,25 +164,25 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // ---- API requests (GET/HEAD/etc): NETWORK-FIRST, do not cache responses ----
-  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) {
-    e.respondWith((async () => {
-      try {
-        // Always try the network first for authenticated/dynamic data
-        return await fetch(req);
-      } catch {
-        // If offline, try a cache fallback ONLY if one exists (usually none for APIs)
-        const cached = await caches.match(req);
-        if (cached) return cached;
+// ---- API requests (GET/HEAD/etc): NETWORK-FIRST, do not cache responses ----
+if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) {
+  e.respondWith((async () => {
+    try {
+      // Always try the network first for authenticated/dynamic data
+      return await fetch(req);
+    } catch {
+      // If offline, allow a cache fallback ONLY if one exists (usually none for APIs)
+      const cached = await caches.match(req);
+      if (cached) return cached;
 
-        return new Response(JSON.stringify({ ok: false, offline: true }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-    })());
-    return;
-  }
+      return new Response(JSON.stringify({ ok: false, offline: true }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  })());
+  return;
+}
 
   // ---- Navigations: online-first, fallback to shell ----
   if (req.mode === 'navigate') {
