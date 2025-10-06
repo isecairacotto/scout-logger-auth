@@ -396,6 +396,10 @@
     const adminExportAllBtn=document.getElementById('adminExportAllBtn');
     const topbar=document.getElementById('topbar');
 
+    // Expose to global so db.js hydration and console can access them
+    window.adminScoutSelect = adminScoutSelect;
+
+
     // ---------- Session & Storage ----------
     function saveSession(s){ localStorage.setItem('session', JSON.stringify(s)); }
     function loadSession(){ try{ return JSON.parse(localStorage.getItem('session')) } catch { return null } }
@@ -988,6 +992,8 @@ function renderEventsTable(){
             </td>`;
           adminEventsTableBody.appendChild(tr);
         });
+        
+        window.adminListEventsFor = adminListEventsFor;
 
         adminEventsTableBody.querySelectorAll('button').forEach(b=>{
           b.addEventListener('click', ()=>{
