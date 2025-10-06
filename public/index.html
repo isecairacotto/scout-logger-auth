@@ -386,19 +386,19 @@
     const blastTeamWrap=document.getElementById('blastTeamWrap'), trackmanTeamWrap=document.getElementById('trackmanTeamWrap');
     const blastTeams=document.getElementById('blastTeams'), trackmanTeams=document.getElementById('trackmanTeams');
 
-    // Admin
-    const adminScoutsTab=document.getElementById('adminScoutsTab');
-    const adminNewTab   =document.getElementById('adminNewTab');
-    const adminScoutsView=document.getElementById('adminScoutsView');
-    const adminNewView  =document.getElementById('adminNewView');
-    const adminScoutSelect=document.getElementById('adminScoutSelect');
-    const adminEventsTableBody=document.querySelector('#adminEventsTable tbody');
-    const adminExportAllBtn=document.getElementById('adminExportAllBtn');
-    const topbar=document.getElementById('topbar');
+// ---------- Admin ----------
+const adminScoutsTab       = document.getElementById('adminScoutsTab');
+const adminNewTab          = document.getElementById('adminNewTab');
+const adminScoutsView      = document.getElementById('adminScoutsView');
+const adminNewView         = document.getElementById('adminNewView');
+const adminScoutSelect     = document.getElementById('adminScoutSelect');
+const adminEventsTableBody = document.querySelector('#adminEventsTable tbody');
+const adminExportAllBtn    = document.getElementById('adminExportAllBtn');
+const topbar               = document.getElementById('topbar');
 
-    // Expose to global so db.js hydration and console can access them
-    window.adminScoutSelect = adminScoutSelect;
-    window.adminEventsTableBody = adminEventsTableBody; // optional, handy for debugging
+// ✅ expose DOM handles for console/db.js
+window.adminScoutSelect     = adminScoutSelect;
+window.adminEventsTableBody = adminEventsTableBody;
 
 
     // ---------- Session & Storage ----------
@@ -1030,11 +1030,12 @@ function renderEventsTable(){
             if(r.ok && ct.includes('application/json')){ const data=await r.json(); render(data.events||[]); return; }
           }catch(_){}
         }
-
-        window.adminListEventsFor = adminListEventsFor;
         render(loadJSON(keyEvents(user), []));
       })();
     }
+
+    // ✅ add this line right here (after the function)
+    window.adminListEventsFor = adminListEventsFor;
 
     adminScoutsTab.addEventListener('click', ()=>{
       show(vAdmin);
