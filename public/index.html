@@ -318,7 +318,7 @@
             ? { Authorization: 'Bearer ' + s.token }
             : {})
       };
-      const res = await fetch(url, { ...opts, headers });
+      const res = await fetch(url, { cache: 'no-store', ...opts, headers });
       if (res.status === 401) {
         clearSession();
         alert('Session expired or invalid. Please sign in again.');
