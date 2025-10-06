@@ -16,9 +16,19 @@ const PORT = process.env.PORT || 3000;
 const SECRET_KEY = process.env.JWT_SECRET || "dev-only-secret";
 console.log("[DEBUG] JWT_SECRET loaded:", process.env.JWT_SECRET ? "env var set" : "FELL BACK TO DEFAULT");
 
+// ---- Instance identifier for debugging multi-instance/restarts ----
+const INSTANCE_ID = `${process.pid}-${Math.random().toString(36).slice(2,7)}`;
+console.log('[BOOT] Instance', INSTANCE_ID);
+
 // --------- Middleware ----------
 app.use(express.json());
 app.use(cors());
+
+// ---- Never cache API responses (prevents stale SW/browser caching) ----
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 // --------- Static frontend (/public) ----------
 app.use(express.static(path.join(__dirname, "public")));
@@ -112,6 +122,16 @@ app.get("/api/__debug/has/:u", (req, res) => {
   res.json({ user: name, exists, count: USERS.length });
 });
 
+// ---- Debug: whoami + instance ----
+app.get('/api/whoami', auth, (req, res) => {
+  res.json({ instance: INSTANCE_ID, user: req.user });
+});
+
+// ---- Debug: events count + instance ----
+app.get('/api/events_count', auth, (_req, res) => {
+  res.json({ instance: INSTANCE_ID, count: EVENTS.length });
+});
+
 // Login
 app.post("/api/login", (req, res) => {
   let { username, password } = req.body || {};
@@ -199,10 +219,11 @@ app.post("/api/events", auth, (req, res) => {
               "named:", name,
               "rows:", rows.length);
 
-  EVENTS.push(evt);
-  saveEvents(EVENTS);
-  console.log("[SERVER] Saved event:", evt.name, "for", evt.user, "now total events:", EVENTS.length);
-  res.json({ ok: true, id: evt.id });
+EVENTS.push(evt);
+saveEvents(EVENTS);
+console.log("[SERVER] Saved event:", evt.name, "for", evt.user);
+console.log("[SERVER] TOTAL_EVENTS_AFTER_SAVE =", EVENTS.length, "on", INSTANCE_ID);
+res.json({ ok: true, id: evt.id });
 });
 
 const FULLNAME_TO_USERNAME = new Map(
@@ -249,8 +270,8 @@ app.get("/api/events", auth, (req, res) => {
 
     return false;
   }).sort((a, b) => b.id - a.id);
-
-  console.log("[SERVER] Returning", list.length, "events for", normalized);
+  
+  console.log("[SERVER] RETURNING", list.length, "events for", normalized, "on", INSTANCE_ID);
   res.json({ user: normalized, events: list });
 });
 
