@@ -398,6 +398,7 @@
 
     // Expose to global so db.js hydration and console can access them
     window.adminScoutSelect = adminScoutSelect;
+    window.adminEventsTableBody = adminEventsTableBody; // optional, handy for debugging
 
 
     // ---------- Session & Storage ----------
@@ -993,8 +994,6 @@ function renderEventsTable(){
           adminEventsTableBody.appendChild(tr);
         });
         
-        window.adminListEventsFor = adminListEventsFor;
-
         adminEventsTableBody.querySelectorAll('button').forEach(b=>{
           b.addEventListener('click', ()=>{
             const id=Number(b.dataset.id), action=b.dataset.action;
@@ -1031,6 +1030,8 @@ function renderEventsTable(){
             if(r.ok && ct.includes('application/json')){ const data=await r.json(); render(data.events||[]); return; }
           }catch(_){}
         }
+
+        window.adminListEventsFor = adminListEventsFor;
         render(loadJSON(keyEvents(user), []));
       })();
     }
