@@ -148,8 +148,6 @@ app.post("/api/login", (req, res) => {
   res.json({ token, fullName: user.fullName, role: user.role });
 });
 
-function auth(req, res, next) { /* you already have this for events */ next(); }
-
 app.get("/api/users", auth, (req, res) => {
   if (req.user?.role !== "admin") return res.status(403).json({ message: "Forbidden" });
   // return sorted by last name
