@@ -585,6 +585,49 @@ window.adminEventsTableBody = adminEventsTableBody;
         countHint.textContent=`${pitches.length} ${pitches.length===1?'pitch':'pitches'}`;
       }
 
+      function ensureReviewBar(){
+        if (document.getElementById('reviewBar')) return;
+        const bar = document.createElement('div');
+        bar.id = 'reviewBar';
+        bar.className = 'row';
+        bar.style.cssText = 'margin:10px 0;padding:10px;border:1px dashed var(--border);border-radius:10px;background:#fff7ed;align-items:center;gap:10px;';
+        bar.innerHTML = `
+        <span class="hint">Reviewing a saved event</span>
+        <div class="right"></div>
+        <button class="secondary" id="btnDoneReview" type="button">Done reviewing</button>
+        <button class="primary" id="btnResubmit" type="button">Re-submit</button>
+        `;
+        document.getElementById('scout-new').insertBefore(bar, document.getElementById('scout-new').firstChild);
+        
+        document.getElementById('btnDoneReview').addEventListener('click', () => {
+          // hard clear
+          saveJSON(K_PITCHES, []); 
+          saveJSON(K_PLAYERS, []);
+          pitches = [];
+          players = [];
+          renderTable();
+          
+          // reset DSP UI
+          dspToggle.classList.remove('active');
+          dspToggle.textContent='No';
+          dspToggle.setAttribute('aria-pressed','false');
+          dspChecklist.classList.remove('show');
+          ckBlast.checked=false; blastTeamWrap.style.display='none';
+          ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
+          
+          // hide review bar
+          bar.remove();
+          // collapse the submit panel if it was open
+          eventSection.style.display='none';
+        });
+        
+        document.getElementById('btnResubmit').addEventListener('click', () => {
+          // open the submit panel with current rows/roster visible
+          eventSection.style.display='block';
+          eventSection.scrollIntoView({ behavior:'smooth' });
+        });
+      }
+
       function getSelections(){
         const pitcher=pitcherSelect.value, hitter=batterSelect.value;
         if(!pitcher||pitcher.startsWith('—')){ alert('Select a PITCHER.'); return null; }
@@ -898,6 +941,8 @@ function renderEventsTable(){
             trackmanTeamWrap.style.display = e.trackman.length ? 'block' : 'none';
           }
 
+          if (typeof ensureReviewBar === 'function') ensureReviewBar();
+
           if (typeof window.reloadLoggerFromStorage === 'function') {
             window.reloadLoggerFromStorage();
           } else {
@@ -1009,6 +1054,7 @@ function renderEventsTable(){
               adminNewTab.classList.add('active'); adminScoutsTab.classList.remove('active');
               adminScoutsView.classList.add('hidden'); adminNewView.classList.remove('hidden');
               mountNewEventIntoAdmin();
+              if (typeof ensureReviewBar === 'function') ensureReviewBar();
               if(typeof window.reloadLoggerFromStorage==='function'){ window.reloadLoggerFromStorage(); }
               else { initLoggerOnce(); }
               window.scrollTo({top:0,behavior:'smooth'});
