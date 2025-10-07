@@ -599,6 +599,7 @@ window.adminEventsTableBody = adminEventsTableBody;
 
       function ensureReviewBar(){
         if (document.getElementById('reviewBar')) return;
+        
         const bar = document.createElement('div');
         bar.id = 'reviewBar';
         bar.className = 'row';
@@ -612,7 +613,11 @@ window.adminEventsTableBody = adminEventsTableBody;
         document.getElementById('scout-new').insertBefore(bar, document.getElementById('scout-new').firstChild);
         
         document.getElementById('btnDoneReview').addEventListener('click', () => {
-          // hard clear
+          const s = loadSession() || {};
+          const user = s.username || 'guest';
+          const K_PITCHES = keyPitches(user);
+          const K_PLAYERS = keyPlayers(user);
+          
           saveJSON(K_PITCHES, []); 
           saveJSON(K_PLAYERS, []);
           pitches = [];
@@ -639,6 +644,8 @@ window.adminEventsTableBody = adminEventsTableBody;
           eventSection.scrollIntoView({ behavior:'smooth' });
         });
       }
+
+      window.ensureReviewBar = ensureReviewBar;
 
       function getSelections(){
         const pitcher=pitcherSelect.value, hitter=batterSelect.value;
