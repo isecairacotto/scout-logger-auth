@@ -32,10 +32,20 @@
   .seg button.active{border-color:var(--navy);color:#fff;background:var(--navy)}
   .seg.sm button{min-width:70px;padding:9px 10px;font-size:14px}
   .slider-wrap{display:flex;align-items:center;gap:10px}
-  input[type="range"]{flex:1;height:40px}
+  .slider-wrap input[type="range"]{
+    flex:1 1 auto;
+    min-width:240px;
+    height:20px;
+  }
+  .slider-wrap .badge-input{
+    flex:0 0 40px;     /* fixed width, no flex-grow */
+    width:40px;
+    font-size:12px;
+    padding:2px 4px;
+    text-align:center;
+  }
   input[type="range"]::-webkit-slider-thumb{height:36px;width:36px}
   input[type="range"]::-moz-range-thumb{height:36px;width:36px}
-  .badge-input{width:44px;font-size:13px;padding:4px 6px}
   .primary{background:var(--red);color:#fff;border:none;border-radius:12px;padding:14px 16px;font-size:16px;font-weight:800;cursor:pointer}
   .secondary{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:16px;font-weight:700;cursor:pointer}
   .ghost{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 10px;cursor:pointer}
