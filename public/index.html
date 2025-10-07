@@ -33,16 +33,18 @@
   .seg.sm button{min-width:70px;padding:9px 10px;font-size:14px}
   .slider-wrap{display:flex;align-items:center;gap:10px}
   .slider-wrap input[type="range"]{
-    flex:1 1 auto;
-    min-width:240px;
-    height:20px;
+    flex:3 1 0;
+    min-width:22px;
+    height:0px;
   }
   .slider-wrap .badge-input{
-    flex:0 0 40px;     /* fixed width, no flex-grow */
-    width:40px;
-    font-size:12px;
-    padding:2px 4px;
+    flex:1 1 0;     /* fixed width, no flex-grow */
+    width:140px;
+    font-size:14px;
+    padding:4px 6px;
     text-align:center;
+    border:1px solid var(--border);
+    border-radius:8px;
   }
   input[type="range"]::-webkit-slider-thumb{height:36px;width:36px}
   input[type="range"]::-moz-range-thumb{height:36px;width:36px}
