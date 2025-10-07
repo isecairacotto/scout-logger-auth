@@ -624,6 +624,24 @@ window.adminEventsTableBody = adminEventsTableBody;
           players = [];
           renderTable();
           
+          // Rebuild selects from cleared roster and force placeholder selection
+          if (typeof refreshSelects === 'function') refreshSelects();
+          if (typeof pitcherSelect !== 'undefined' && pitcherSelect) pitcherSelect.selectedIndex = 0;
+          if (typeof batterSelect  !== 'undefined' && batterSelect)  batterSelect.selectedIndex  = 0;
+
+          //Reset “current pitch” widgets + table + counter
+          if (typeof resetPitchForm === 'function') resetPitchForm();
+          if (typeof renderTable === 'function')    renderTable();
+          if (typeof countHint !== 'undefined')     countHint.textContent = '0 pitches';
+          
+          // Clear Submit Event fields
+          if (typeof eventName     !== 'undefined') eventName.value     = '';
+          if (typeof eventLocation !== 'undefined') eventLocation.value = '';
+          if (typeof scoutName     !== 'undefined') scoutName.value     = '';
+          if (typeof todayMDY === 'function' && typeof eventDate !== 'undefined') {
+            eventDate.value = todayMDY(); // optional: reset date to today
+          }
+          
           // reset DSP UI
           dspToggle.classList.remove('active');
           dspToggle.textContent='No';
@@ -631,9 +649,11 @@ window.adminEventsTableBody = adminEventsTableBody;
           dspChecklist.classList.remove('show');
           ckBlast.checked=false; blastTeamWrap.style.display='none';
           ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
+          Array.from(blastTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
+          Array.from(trackmanTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
           
           // hide review bar
-          bar.remove();
+          document.getElementById('reviewBar')?.remove(); // ✅ replaces bar.remove()
           // collapse the submit panel if it was open
           eventSection.style.display='none';
         });
