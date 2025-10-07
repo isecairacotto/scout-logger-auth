@@ -767,17 +767,27 @@ window.adminEventsTableBody = adminEventsTableBody;
   }
 })();
 
-        // Clear working sets and UI
-        saveJSON(K_PITCHES,[]); saveJSON(K_PLAYERS,[]);
-        playerNameInput.value=''; eventName.value=''; eventLocation.value=''; scoutName.value='';
-        ckBlast.checked=false; blastTeamWrap.style.display='none';
-        ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
-        dspToggle.classList.remove('active'); dspToggle.textContent='No'; dspChecklist.classList.remove('show');
+// Clear working sets (storage + in-memory) and UI
+saveJSON(K_PITCHES,[]); 
+saveJSON(K_PLAYERS,[]);
+pitches = [];               // << hard clear in-memory
+players = [];               // << hard clear in-memory
+renderTable();              // reflect the clears immediately
 
-        eventMsg.innerHTML='<div class="success">Event submitted. Saved to History & cleared current log.</div>';
-        refreshSelects(); renderTable(); renderEventsTable();
-        setTimeout(()=>{ eventSection.style.display='none'; }, 1200);
-      });
+playerNameInput.value=''; eventName.value=''; eventLocation.value=''; scoutName.value='';
+ckBlast.checked=false; blastTeamWrap.style.display='none';
+ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
+dspToggle.classList.remove('active'); dspToggle.textContent='No'; dspChecklist.classList.remove('show');
+
+// if a review bar is showing, hide it
+const rb = document.getElementById('reviewBar');
+if (rb) rb.remove();
+
+eventMsg.innerHTML='<div class="success">Event submitted. Saved to History & cleared current log.</div>';
+refreshSelects(); 
+renderEventsTable();
+setTimeout(()=>{ eventSection.style.display='none'; }, 1200);
+
 
       refreshSelects(); renderTable();
     } // initLoggerOnce
