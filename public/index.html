@@ -650,9 +650,71 @@ window.adminEventsTableBody = adminEventsTableBody;
         if (lock) lockEventMetaInputs(true);
       }
 
+function resetNewEventForm({ setDateToToday = true } = {}) {
+  const s = loadSession() || {};
+  const user = s.username || 'guest';
+  const K_PITCHES = keyPitches(user);
+  const K_PLAYERS = keyPlayers(user);
+
+  // Clear storage + in-memory
+  saveJSON(K_PITCHES, []);
+  saveJSON(K_PLAYERS, []);
+  if (typeof pitches !== 'undefined') pitches = [];
+  if (typeof players !== 'undefined') players = [];
+  if (typeof renderTable === 'function') renderTable();
+
+  // Rebuild selects and force placeholder selection
+  if (typeof refreshSelects === 'function') refreshSelects();
+  if (typeof pitcherSelect !== 'undefined' && pitcherSelect) pitcherSelect.selectedIndex = 0;
+  if (typeof batterSelect  !== 'undefined' && batterSelect)  batterSelect.selectedIndex  = 0;
+
+  // Reset current-pitch widgets
+  if (typeof resetPitchForm === 'function') resetPitchForm();
+  if (typeof countHint !== 'undefined') countHint.textContent = '0 pitches';
+
+  // Clear “Submit Event” fields
+  if (typeof eventName     !== 'undefined') eventName.value     = '';
+  if (typeof eventLocation !== 'undefined') eventLocation.value = '';
+  if (typeof scoutName     !== 'undefined') scoutName.value     = '';
+  if (setDateToToday && typeof todayMDY === 'function' && typeof eventDate !== 'undefined') {
+    eventDate.value = todayMDY();
+  } else if (typeof eventDate !== 'undefined') {
+    eventDate.value = '';
+  }
+
+  // Reset DSP + integrations
+  if (typeof dspToggle !== 'undefined') {
+    dspToggle.classList.remove('active');
+    dspToggle.textContent = 'No';
+    dspToggle.setAttribute('aria-pressed', 'false');
+  }
+  if (typeof dspChecklist !== 'undefined') dspChecklist.classList.remove('show');
+
+  if (typeof ckBlast !== 'undefined') ckBlast.checked = false;
+  if (typeof blastTeamWrap !== 'undefined') blastTeamWrap.style.display = 'none';
+  if (typeof blastTeams !== 'undefined') {
+    Array.from(blastTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
+  }
+
+  if (typeof ckTrackman !== 'undefined') ckTrackman.checked = false;
+  if (typeof trackmanTeamWrap !== 'undefined') trackmanTeamWrap.style.display = 'none';
+  if (typeof trackmanTeams !== 'undefined') {
+    Array.from(trackmanTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
+  }
+
+  // Unlock any locked meta fields (exit review mode)
+  if (typeof lockEventMetaInputs === 'function') lockEventMetaInputs(false);
+  window.currentEventMeta = null;
+
+  // Hide review bar and submit panel if present
+  const rb = document.getElementById('reviewBar');
+  if (rb) rb.remove();
+  if (typeof eventSection !== 'undefined') eventSection.style.display = 'none';
+}
+
       function ensureReviewBar(){
         if (document.getElementById('reviewBar')) return;
-        
+
         const bar = document.createElement('div');
         bar.id = 'reviewBar';
         bar.className = 'row';
@@ -663,65 +725,27 @@ window.adminEventsTableBody = adminEventsTableBody;
         <button class="secondary" id="btnDoneReview" type="button">Done reviewing</button>
         <button class="primary" id="btnResubmit" type="button">Re-submit</button>
         `;
-        document.getElementById('scout-new').insertBefore(bar, document.getElementById('scout-new').firstChild);
-        
+        document.getElementById('scout-new').insertBefore(
+          bar,
+          document.getElementById('scout-new').firstChild
+        );
+
+        // ✅ simplified: call the unified reset helper instead of rewriting all the clear logic
         document.getElementById('btnDoneReview').addEventListener('click', () => {
-          const s = loadSession() || {};
-          const user = s.username || 'guest';
-          const K_PITCHES = keyPitches(user);
-          const K_PLAYERS = keyPlayers(user);
-          
-          saveJSON(K_PITCHES, []); 
-          saveJSON(K_PLAYERS, []);
-          pitches = [];
-          players = [];
-          renderTable();
-          
-          // Rebuild selects from cleared roster and force placeholder selection
-          if (typeof refreshSelects === 'function') refreshSelects();
-          if (typeof pitcherSelect !== 'undefined' && pitcherSelect) pitcherSelect.selectedIndex = 0;
-          if (typeof batterSelect  !== 'undefined' && batterSelect)  batterSelect.selectedIndex  = 0;
-
-          //Reset “current pitch” widgets + table + counter
-          if (typeof resetPitchForm === 'function') resetPitchForm();
-          if (typeof renderTable === 'function')    renderTable();
-          if (typeof countHint !== 'undefined')     countHint.textContent = '0 pitches';
-          
-          // Clear Submit Event fields
-          if (typeof eventName     !== 'undefined') eventName.value     = '';
-          if (typeof eventLocation !== 'undefined') eventLocation.value = '';
-          if (typeof scoutName     !== 'undefined') scoutName.value     = '';
-          if (typeof todayMDY === 'function' && typeof eventDate !== 'undefined') {
-            eventDate.value = todayMDY(); // optional: reset date to today
+          if (typeof resetNewEventForm === 'function') {
+            resetNewEventForm({ setDateToToday: true });
           }
-          
-          // reset DSP UI
-          dspToggle.classList.remove('active');
-          dspToggle.textContent='No';
-          dspToggle.setAttribute('aria-pressed','false');
-          dspChecklist.classList.remove('show');
-          ckBlast.checked=false; blastTeamWrap.style.display='none';
-          ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
-          Array.from(blastTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
-          Array.from(trackmanTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
-
-          if (typeof lockEventMetaInputs === 'function') lockEventMetaInputs(false);
-          window.currentEventMeta = null;
-          
-          // hide review bar
-          document.getElementById('reviewBar')?.remove(); // ✅ replaces bar.remove()
-          // collapse the submit panel if it was open
-          eventSection.style.display='none';
         });
-        
+
+        // Keep this one — reopens the event for editing
         document.getElementById('btnResubmit').addEventListener('click', () => {
-          // open the submit panel with current rows/roster visible
-          eventSection.style.display='block';
+          eventSection.style.display = 'block';
           eventSection.scrollIntoView({ behavior:'smooth' });
         });
       }
 
       window.ensureReviewBar = ensureReviewBar;
+
 
       function getSelections(){
         const pitcher=pitcherSelect.value, hitter=batterSelect.value;
@@ -928,6 +952,8 @@ finalSubmitBtn.addEventListener('click', ()=>{
     }
   })();
 
+  if (typeof resetNewEventForm === 'function') resetNewEventForm({ setDateToToday: true });
+
 // Clear working sets (storage + in-memory) and UI
 saveJSON(K_PITCHES,[]); 
 saveJSON(K_PLAYERS,[]);
@@ -1079,6 +1105,20 @@ function renderEventsTable(){
           } else {
             initLoggerOnce();
           }
+          // Apply snapshot & lock AFTER the UI exists
+          setTimeout(() => {
+            window.currentEventMeta = {
+              date: e.date || '',
+              scout: e.scout || '',
+              name: e.name || '',
+              location: e.location || '',
+              dsp: !!e.dsp,
+              blast: Array.isArray(e.blast) ? e.blast.slice() : [],
+              trackman: Array.isArray(e.trackman) ? e.trackman.slice() : []
+            };
+            applyEventMetaToForm(window.currentEventMeta, { lock: true });
+            if (typeof ensureReviewBar === 'function') ensureReviewBar();
+          }, 0);
           window.scrollTo({top:0,behavior:'smooth'});
         }
       });
@@ -1199,6 +1239,20 @@ function renderEventsTable(){
               if (typeof ensureReviewBar === 'function') ensureReviewBar();
               if(typeof window.reloadLoggerFromStorage==='function'){ window.reloadLoggerFromStorage(); }
               else { initLoggerOnce(); }
+              // Apply snapshot & lock AFTER the UI exists
+              setTimeout(() => {
+                window.currentEventMeta = {
+                  date: e.date || '',
+                  scout: e.scout || '',
+                  name: e.name || '',
+                  location: e.location || '',
+                  dsp: !!e.dsp,
+                  blast: Array.isArray(e.blast) ? e.blast.slice() : [],
+                  trackman: Array.isArray(e.trackman) ? e.trackman.slice() : []
+                };
+                applyEventMetaToForm(window.currentEventMeta, { lock: true });
+                if (typeof ensureReviewBar === 'function') ensureReviewBar();
+              }, 0);
               window.scrollTo({top:0,behavior:'smooth'});
             }
           });
