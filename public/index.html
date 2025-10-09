@@ -705,7 +705,7 @@ window.adminEventsTableBody = adminEventsTableBody;
           Array.from(blastTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
           Array.from(trackmanTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
 
-          if (typeof lcok EventMetaInputs === 'function') lockEventMetaInputs(false);
+          if (typeof lockEventMetaInputs === 'function') lockEventMetaInputs(false);
           window.currentEventMeta = null;
           
           // hide review bar
