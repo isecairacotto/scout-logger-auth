@@ -597,124 +597,9 @@ window.adminEventsTableBody = adminEventsTableBody;
         countHint.textContent=`${pitches.length} ${pitches.length===1?'pitch':'pitches'}`;
       }
 
-      // ==== Review-mode meta snapshot & helpers ====
-      
-      window.currentEventMeta = null;
-
-      function lockEventMetaInputs(disabled) {
-        if (typeof eventDate      !== 'undefined') eventDate.readOnly     = disabled;
-        if (typeof eventName      !== 'undefined') eventName.disabled     = disabled;
-        if (typeof eventLocation  !== 'undefined') eventLocation.disabled = disabled;
-        if (typeof scoutName      !== 'undefined') scoutName.disabled     = disabled;
-
-        if (typeof dspToggle      !== 'undefined') dspToggle.disabled     = disabled;
-        if (typeof ckBlast        !== 'undefined') ckBlast.disabled       = disabled;
-        if (typeof ckTrackman     !== 'undefined') ckTrackman.disabled    = disabled;
-
-        if (typeof blastTeams     !== 'undefined')
-          Array.from(blastTeams.querySelectorAll('input')).forEach(i => i.disabled = disabled);
-        if (typeof trackmanTeams  !== 'undefined')
-          Array.from(trackmanTeams.querySelectorAll('input')).forEach(i => i.disabled = disabled);
-      }
-
-      function applyEventMetaToForm(meta, { lock = false } = {}) {
-        if (!meta) return;
-
-        if (typeof eventDate      !== 'undefined') eventDate.value      = meta.date      || '';
-        if (typeof scoutName      !== 'undefined') scoutName.value      = meta.scout     || '';
-        if (typeof eventName      !== 'undefined') eventName.value      = meta.name      || '';
-        if (typeof eventLocation  !== 'undefined') eventLocation.value  = meta.location  || '';
-
-        if (typeof dspToggle !== 'undefined') {
-          const active = !!meta.dsp;
-          dspToggle.classList.toggle('active', active);
-          dspToggle.textContent = active ? 'Yes' : 'No';
-          dspToggle.setAttribute('aria-pressed', String(active));
-          if (active) dspChecklist.classList.add('show'); else dspChecklist.classList.remove('show');
-        }
-
-        if (Array.isArray(meta.blast) && typeof blastTeams !== 'undefined') {
-          Array.from(blastTeams.querySelectorAll('input[type="checkbox"]'))
-            .forEach(cb => cb.checked = meta.blast.includes(cb.value));
-          if (typeof blastTeamWrap !== 'undefined')
-            blastTeamWrap.style.display = meta.blast.length ? 'block' : 'none';
-        }
-
-        if (Array.isArray(meta.trackman) && typeof trackmanTeams !== 'undefined') {
-          Array.from(trackmanTeams.querySelectorAll('input[type="checkbox"]'))
-            .forEach(cb => cb.checked = meta.trackman.includes(cb.value));
-          if (typeof trackmanTeamWrap !== 'undefined')
-            trackmanTeamWrap.style.display = meta.trackman.length ? 'block' : 'none';
-        }
-
-        if (lock) lockEventMetaInputs(true);
-      }
-
-function resetNewEventForm({ setDateToToday = true } = {}) {
-  const s = loadSession() || {};
-  const user = s.username || 'guest';
-  const K_PITCHES = keyPitches(user);
-  const K_PLAYERS = keyPlayers(user);
-
-  // Clear storage + in-memory
-  saveJSON(K_PITCHES, []);
-  saveJSON(K_PLAYERS, []);
-  if (typeof pitches !== 'undefined') pitches = [];
-  if (typeof players !== 'undefined') players = [];
-  if (typeof renderTable === 'function') renderTable();
-
-  // Rebuild selects and force placeholder selection
-  if (typeof refreshSelects === 'function') refreshSelects();
-  if (typeof pitcherSelect !== 'undefined' && pitcherSelect) pitcherSelect.selectedIndex = 0;
-  if (typeof batterSelect  !== 'undefined' && batterSelect)  batterSelect.selectedIndex  = 0;
-
-  // Reset current-pitch widgets
-  if (typeof resetPitchForm === 'function') resetPitchForm();
-  if (typeof countHint !== 'undefined') countHint.textContent = '0 pitches';
-
-  // Clear “Submit Event” fields
-  if (typeof eventName     !== 'undefined') eventName.value     = '';
-  if (typeof eventLocation !== 'undefined') eventLocation.value = '';
-  if (typeof scoutName     !== 'undefined') scoutName.value     = '';
-  if (setDateToToday && typeof todayMDY === 'function' && typeof eventDate !== 'undefined') {
-    eventDate.value = todayMDY();
-  } else if (typeof eventDate !== 'undefined') {
-    eventDate.value = '';
-  }
-
-  // Reset DSP + integrations
-  if (typeof dspToggle !== 'undefined') {
-    dspToggle.classList.remove('active');
-    dspToggle.textContent = 'No';
-    dspToggle.setAttribute('aria-pressed', 'false');
-  }
-  if (typeof dspChecklist !== 'undefined') dspChecklist.classList.remove('show');
-
-  if (typeof ckBlast !== 'undefined') ckBlast.checked = false;
-  if (typeof blastTeamWrap !== 'undefined') blastTeamWrap.style.display = 'none';
-  if (typeof blastTeams !== 'undefined') {
-    Array.from(blastTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
-  }
-
-  if (typeof ckTrackman !== 'undefined') ckTrackman.checked = false;
-  if (typeof trackmanTeamWrap !== 'undefined') trackmanTeamWrap.style.display = 'none';
-  if (typeof trackmanTeams !== 'undefined') {
-    Array.from(trackmanTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
-  }
-
-  // Unlock any locked meta fields (exit review mode)
-  if (typeof lockEventMetaInputs === 'function') lockEventMetaInputs(false);
-  window.currentEventMeta = null;
-
-  // Hide review bar and submit panel if present
-  const rb = document.getElementById('reviewBar');
-  if (rb) rb.remove();
-  if (typeof eventSection !== 'undefined') eventSection.style.display = 'none';
-}
-
       function ensureReviewBar(){
         if (document.getElementById('reviewBar')) return;
-
+        
         const bar = document.createElement('div');
         bar.id = 'reviewBar';
         bar.className = 'row';
@@ -725,27 +610,62 @@ function resetNewEventForm({ setDateToToday = true } = {}) {
         <button class="secondary" id="btnDoneReview" type="button">Done reviewing</button>
         <button class="primary" id="btnResubmit" type="button">Re-submit</button>
         `;
-        document.getElementById('scout-new').insertBefore(
-          bar,
-          document.getElementById('scout-new').firstChild
-        );
-
-        // ✅ simplified: call the unified reset helper instead of rewriting all the clear logic
+        document.getElementById('scout-new').insertBefore(bar, document.getElementById('scout-new').firstChild);
+        
         document.getElementById('btnDoneReview').addEventListener('click', () => {
-          if (typeof resetNewEventForm === 'function') {
-            resetNewEventForm({ setDateToToday: true });
-          }
-        });
+          const s = loadSession() || {};
+          const user = s.username || 'guest';
+          const K_PITCHES = keyPitches(user);
+          const K_PLAYERS = keyPlayers(user);
+          
+          saveJSON(K_PITCHES, []); 
+          saveJSON(K_PLAYERS, []);
+          pitches = [];
+          players = [];
+          renderTable();
+          
+          // Rebuild selects from cleared roster and force placeholder selection
+          if (typeof refreshSelects === 'function') refreshSelects();
+          if (typeof pitcherSelect !== 'undefined' && pitcherSelect) pitcherSelect.selectedIndex = 0;
+          if (typeof batterSelect  !== 'undefined' && batterSelect)  batterSelect.selectedIndex  = 0;
 
-        // Keep this one — reopens the event for editing
+          //Reset “current pitch” widgets + table + counter
+          if (typeof resetPitchForm === 'function') resetPitchForm();
+          if (typeof renderTable === 'function')    renderTable();
+          if (typeof countHint !== 'undefined')     countHint.textContent = '0 pitches';
+          
+          // Clear Submit Event fields
+          if (typeof eventName     !== 'undefined') eventName.value     = '';
+          if (typeof eventLocation !== 'undefined') eventLocation.value = '';
+          if (typeof scoutName     !== 'undefined') scoutName.value     = '';
+          if (typeof todayMDY === 'function' && typeof eventDate !== 'undefined') {
+            eventDate.value = todayMDY(); // optional: reset date to today
+          }
+          
+          // reset DSP UI
+          dspToggle.classList.remove('active');
+          dspToggle.textContent='No';
+          dspToggle.setAttribute('aria-pressed','false');
+          dspChecklist.classList.remove('show');
+          ckBlast.checked=false; blastTeamWrap.style.display='none';
+          ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
+          Array.from(blastTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
+          Array.from(trackmanTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
+          
+          // hide review bar
+          document.getElementById('reviewBar')?.remove(); // ✅ replaces bar.remove()
+          // collapse the submit panel if it was open
+          eventSection.style.display='none';
+        });
+        
         document.getElementById('btnResubmit').addEventListener('click', () => {
-          eventSection.style.display = 'block';
+          // open the submit panel with current rows/roster visible
+          eventSection.style.display='block';
           eventSection.scrollIntoView({ behavior:'smooth' });
         });
       }
 
       window.ensureReviewBar = ensureReviewBar;
-
 
       function getSelections(){
         const pitcher=pitcherSelect.value, hitter=batterSelect.value;
@@ -862,97 +782,72 @@ function resetNewEventForm({ setDateToToday = true } = {}) {
         }));
       }
 
-finalSubmitBtn.addEventListener('click', ()=>{
-  const s = loadSession() || {};
-  const user = s.username || 'guest';
-  const K_EVENTS  = keyEvents(user);
-  const K_PITCHES = keyPitches(user);
-  const K_PLAYERS = keyPlayers(user);
+      finalSubmitBtn.addEventListener('click', ()=>{
+        const s=loadSession()||{};
+        const user=s.username||'guest';
+        const K_EVENTS=keyEvents(user);
+        const K_PITCHES=keyPitches(user);
+        const K_PLAYERS=keyPlayers(user);
 
-  // === Use snapshot in Review mode ===
-  const isReviewing = !!document.getElementById('reviewBar') && !!window.currentEventMeta;
+        const name=(eventName.value||'').trim()||'Untitled';
+        const date=(eventDate.value||todayMDY()).trim();
+        const location=(eventLocation.value||'').trim();
+        const scout=(scoutName.value||s.fullName||user).trim();
 
-  let name, date, location, scout, dsp, blast, trackman;
+        const rows=loadJSON(K_PITCHES, []);
+        if(!rows.length){ eventMsg.innerHTML='<div class="success warn">No pitches to save.</div>'; return; }
 
-  if (isReviewing) {
-    const m = window.currentEventMeta || {};
-    name     = m.name || 'Untitled';
-    date     = m.date || todayMDY();
-    location = m.location || '';
-    scout    = m.scout || (s.fullName || user);
-    dsp      = !!m.dsp;
-    blast    = Array.isArray(m.blast) ? m.blast.slice() : [];
-    trackman = Array.isArray(m.trackman) ? m.trackman.slice() : [];
-  } else {
-    name     = (eventName.value || '').trim() || 'Untitled';
-    date     = (eventDate.value || todayMDY()).trim();
-    location = (eventLocation.value || '').trim();
-    scout    = (scoutName.value || s.fullName || user).trim();
-    dsp      = dspToggle.classList.contains('active');
-    blast    = ckBlast.checked
-                 ? Array.from(blastTeams.querySelectorAll('input:checked')).map(c => c.value)
-                 : [];
-    trackman = ckTrackman.checked
-                 ? Array.from(trackmanTeams.querySelectorAll('input:checked')).map(c => c.value)
-                 : [];
-  }
+        const dsp = dspToggle.classList.contains('active');
+        const blast = ckBlast.checked ? Array.from(blastTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
+        const trackman = ckTrackman.checked ? Array.from(trackmanTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
+        const currentPlayers = loadJSON(K_PLAYERS, []);
 
-  const rows = loadJSON(K_PITCHES, []);
-  if (!rows.length) {
-    eventMsg.innerHTML = '<div class="success warn">No pitches to save.</div>';
-    return;
-  }
-  const currentPlayers = loadJSON(K_PLAYERS, []);
+        const evts=loadJSON(K_EVENTS, []);
+        const evt={
+          id:Date.now(), user, name, date, location, scout,
+          count:rows.length, rows:rows.slice(),
+          players: currentPlayers.slice(),
+          dsp, blast, trackman
+        };
+        evts.push(evt); saveJSON(K_EVENTS, evts);
 
-  const evts = loadJSON(K_EVENTS, []);
-  const evt = {
-    id: Date.now(),
-    user, name, date, location, scout,
-    count: rows.length,
-    rows: rows.slice(),
-    players: currentPlayers.slice(),
-    dsp, blast, trackman
-  };
-  evts.push(evt);
-  saveJSON(K_EVENTS, evts);
+        (async()=>{
+          try{
+            const sess=loadSession()||{};
+            if (sess.token && sess.token!=='local') {
+              const payload={ name,date,location,scout, rows, dsp,blast,trackman, players: currentPlayers };
+              console.log("DEBUG posting event payload", payload);
+              console.log("DEBUG using token", sess.token);
 
-  (async()=>{
-    try{
-      const sess = loadSession() || {};
-      if (sess.token && sess.token !== 'local') {
-        const payload = { name, date, location, scout, rows, dsp, blast, trackman, players: currentPlayers };
-        console.log("DEBUG posting event payload", payload);
-        console.log("DEBUG using token", sess.token);
+              
+              const r=await fetch('/api/events', {
+                method:'POST',
+                headers:{'Content-Type':'application/json','Authorization':'Bearer '+sess.token},
+                body:JSON.stringify(payload)
+              });
 
-        const r = await fetch('/api/events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sess.token },
-          body: JSON.stringify(payload)
-        });
-
-        console.log("DEBUG /api/events response status:", r.status);
-
-        const ct = (r.headers.get('content-type') || '').toLowerCase();
-        if (r.status === 202 && ct.includes('application/json')) {
-          const j = await r.json();
-          if (j.queued) {
-            eventMsg.innerHTML = '<div class="success">Saved locally - will sync when online.</div>';
-          }
-        } else if (!r.ok || !ct.includes('application/json')) {
-          // treat as offline; SW may still queue it
-          eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
-        }
-      } else {
-        // offline now; SW queues it, we show the same hint
+              console.log("DEBUG /api/events response status:", r.status);
+              
+              const ct=(r.headers.get('content-type')||'').toLowerCase();
+              if (r.status === 202 && ct.includes('application/json')) {
+                const j = await r.json();
+                if (j.quedued) {
+                  eventMsg.innerHTML = '<div class="success">Saved locally - will sync when online.</div>';
+                }
+              } else if (!r.ok || !ct.includes('application/json')) {
+        // treat as offline; SW may still queue it
         eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
       }
-    } catch {
-      // Network error; SW likely queued it already
+      // If r.ok 200/201 -> nothing extra to show
+    } else {
+      // offline now; SW queues it, we show the same hint
       eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
     }
-  })();
-
-  if (typeof resetNewEventForm === 'function') resetNewEventForm({ setDateToToday: true });
+  } catch {
+    // Network error; SW likely queued it already
+    eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
+  }
+})();
 
 // Clear working sets (storage + in-memory) and UI
 saveJSON(K_PITCHES,[]); 
@@ -1086,18 +981,6 @@ function renderEventsTable(){
             trackmanTeamWrap.style.display = e.trackman.length ? 'block' : 'none';
           }
 
-          // Capture original meta and lock form for review
-          window.currentEventMeta = {
-            date: e.date || '',
-            scout: e.scout || '',
-            name: e.name || '',
-            location: e.location || '',
-            dsp: !!e.dsp,
-            blast: Array.isArray(e.blast) ? e.blast.slice() : [],
-            trackman: Array.isArray(e.trackman) ? e.trackman.slice() : []
-          };
-          applyEventMetaToForm(window.currentEventMeta, { lock: true });
-
           if (typeof ensureReviewBar === 'function') ensureReviewBar();
 
           if (typeof window.reloadLoggerFromStorage === 'function') {
@@ -1105,20 +988,6 @@ function renderEventsTable(){
           } else {
             initLoggerOnce();
           }
-          // Apply snapshot & lock AFTER the UI exists
-          setTimeout(() => {
-            window.currentEventMeta = {
-              date: e.date || '',
-              scout: e.scout || '',
-              name: e.name || '',
-              location: e.location || '',
-              dsp: !!e.dsp,
-              blast: Array.isArray(e.blast) ? e.blast.slice() : [],
-              trackman: Array.isArray(e.trackman) ? e.trackman.slice() : []
-            };
-            applyEventMetaToForm(window.currentEventMeta, { lock: true });
-            if (typeof ensureReviewBar === 'function') ensureReviewBar();
-          }, 0);
           window.scrollTo({top:0,behavior:'smooth'});
         }
       });
@@ -1225,34 +1094,9 @@ function renderEventsTable(){
               adminNewTab.classList.add('active'); adminScoutsTab.classList.remove('active');
               adminScoutsView.classList.add('hidden'); adminNewView.classList.remove('hidden');
               mountNewEventIntoAdmin();
-              // Capture original meta and lock form for review
-              window.currentEventMeta = {
-                date: e.date || '',
-                scout: e.scout || '',
-                name: e.name || '',
-                location: e.location || '',
-                dsp: !!e.dsp,
-                blast: Array.isArray(e.blast) ? e.blast.slice() : [],
-                trackman: Array.isArray(e.trackman) ? e.trackman.slice() : []
-              };
-              applyEventMetaToForm(window.currentEventMeta, { lock: true });
               if (typeof ensureReviewBar === 'function') ensureReviewBar();
               if(typeof window.reloadLoggerFromStorage==='function'){ window.reloadLoggerFromStorage(); }
               else { initLoggerOnce(); }
-              // Apply snapshot & lock AFTER the UI exists
-              setTimeout(() => {
-                window.currentEventMeta = {
-                  date: e.date || '',
-                  scout: e.scout || '',
-                  name: e.name || '',
-                  location: e.location || '',
-                  dsp: !!e.dsp,
-                  blast: Array.isArray(e.blast) ? e.blast.slice() : [],
-                  trackman: Array.isArray(e.trackman) ? e.trackman.slice() : []
-                };
-                applyEventMetaToForm(window.currentEventMeta, { lock: true });
-                if (typeof ensureReviewBar === 'function') ensureReviewBar();
-              }, 0);
               window.scrollTo({top:0,behavior:'smooth'});
             }
           });
@@ -1370,4 +1214,3 @@ function renderEventsTable(){
   </script>
 </body>
 </html>
-
