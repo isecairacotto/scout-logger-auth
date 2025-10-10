@@ -74,88 +74,75 @@
   .team-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
   .team-chip{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13px}
   @media(max-width:600px){ .team-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
-  /* ===== MOBILE LAYOUT ENHANCEMENTS (non-breaking) ===== */
+/* ===== MOBILE LAYOUT ENHANCEMENTS (final, cleaned) ===== */
 
-/* Reflow the segmented button rows into grids on small screens */
+/* Base grid helpers for segmented controls */
 .seg.seg-grid { display: grid; gap: 8px; }
+.seg.seg-grid.seg-zone   { grid-template-columns: 1fr 1fr; }           /* IN / OUT */
+.seg.seg-grid.seg-action { grid-template-columns: repeat(3, 1fr); }     /* TAKE / S/M / FOUL / BIP / HBP */
+.seg.seg-grid.seg-type   { grid-template-columns: repeat(3, 1fr); }     /* FB / CB / SL / CH / SF / SI / OTHER */
+
 .seg.seg-grid button {
-  min-width: unset;       /* override .seg button min width */
-  width: 100%;
-  padding: 14px 12px;     /* bigger touch target */
+  /* friendly touch targets; no shrinking text */
+  padding: 14px 12px;
   border-radius: 12px;
   font-weight: 700;
   font-size: 16px;
 }
-.seg.seg-grid.seg-zone   { grid-template-columns: 1fr 1fr; }           /* IN / OUT */
-.seg.seg-grid.seg-action { grid-template-columns: repeat(3, 1fr); }     /* TAKE / S/M / FOUL / BIP / HBP (wraps) */
-.seg.seg-grid.seg-type   { grid-template-columns: repeat(3, 1fr); }     /* FB / CB / SL / CH / SF / SI / OTHER */
 
-/* Keep your existing .seg styles, just add some polish for active + focus */
-.seg button.active{box-shadow:0 0 0 2px rgba(19,41,75,.08) inset}
-.seg button:focus-visible{outline:3px solid #cfe4ff; outline-offset:2px}
-
-/* Make the velo/spin control read well on phones: slider + number box grid */
-.slider-wrap{
-  display: grid; 
-  grid-template-columns: 1fr 140px;   /* slider | numeric box */
-  gap: 10px; 
-  align-items: center;
-}
-.slider-wrap input[type="range"]{ width: 100% }
-.badge-input{
-  font-size: 16px; 
-  padding: 10px; 
-  border:1px solid var(--border); 
-  border-radius:10px; 
-  text-align:center;
-}
-
-/* Sticky bottom action bar so Miss/Submit stay reachable on mobile */
-.action-bar{
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  margin-top: 8px;
-  display: flex;
-  gap: 10px;
-  background: linear-gradient(180deg, rgba(247,247,251,0), rgba(247,247,251,1) 35%);
-  padding: 10px 4px 4px;
-}
-.action-bar .primary,
-.action-bar .secondary{
-  flex: 1 1 0;
-  font-size: 16px;
-  padding: 14px;
-}
-
-/* Small nudge so labels breathe a bit on phones */
+/* Small polish */
+.seg button.active{ box-shadow:0 0 0 2px rgba(19,41,75,.08) inset }
+.seg button:focus-visible{ outline:3px solid #cfe4ff; outline-offset:2px }
 #scout-new label{ margin-top: 2px }
-  /* Force grid buttons to win over legacy .seg rules */
-.seg.seg-grid button{
-  min-width: 0 !important;   /* beats old min-width */
-  width: 100% !important;
-  min-height: 52px;
-  flex: 0 0 auto !important; /* neutralize old flex behavior */
+
+/* ---------- Hard overrides so mobile grid wins on iPhone ---------- */
+/* Even if old .seg/.sm rules exist, these will take precedence. */
+
+#scout-new .seg.seg-grid {
+  display: grid !important;
+  grid-auto-flow: row;
+  gap: 10px;
 }
 
-/* Ensure slider area uses the grid layout, not old flex */
-.slider-wrap{
+#scout-new #zoneSeg.seg-grid      { grid-template-columns: 1fr 1fr !important; }
+#scout-new #actionSeg.seg-grid    { grid-template-columns: repeat(3, minmax(0,1fr)) !important; }
+#scout-new #pitchTypeSeg.seg-grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; }
+
+#scout-new .seg.seg-grid button{
+  min-width: 0 !important;          /* beat legacy min-width */
+  width: 100% !important;
+  flex: 0 0 auto !important;        /* neutralize legacy flex */
+  min-height: 52px;
+}
+
+/* Velo / Spin: force grid (slider | numeric box) */
+#scout-new .slider-wrap{
   display: grid !important;
   grid-template-columns: 1fr 140px;
   gap: 10px;
   align-items: center;
 }
+#scout-new .slider-wrap input[type="range"]{ width: 100% }
 
-/* Sticky action bar that respects iOS safe area */
-.action-bar{
-  position: -webkit-sticky; /* iOS */
+/* Sticky Miss/Submit action bar with iOS safe-area */
+#scout-new .action-bar{
+  position: -webkit-sticky;  /* iOS Safari */
   position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex !important;
+  gap: 10px;
   padding: 10px 4px calc(6px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(247,247,251,0), rgba(247,247,251,1) 35%);
   background-clip: padding-box;
 }
-
-/* Prevent any tiny sideways scroll on iOS */
-html, body { overflow-x: hidden; }
+#scout-new .action-bar .primary,
+#scout-new .action-bar .secondary{
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  font-size: 16px;
+  padding: 14px;
+}
 </style>
 </head>
 <body>
