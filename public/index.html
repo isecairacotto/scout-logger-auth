@@ -74,6 +74,62 @@
   .team-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
   .team-chip{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13px}
   @media(max-width:600px){ .team-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  /* ===== MOBILE LAYOUT ENHANCEMENTS (non-breaking) ===== */
+
+/* Reflow the segmented button rows into grids on small screens */
+.seg.seg-grid { display: grid; gap: 8px; }
+.seg.seg-grid button {
+  min-width: unset;       /* override .seg button min width */
+  width: 100%;
+  padding: 14px 12px;     /* bigger touch target */
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 16px;
+}
+.seg.seg-grid.seg-zone   { grid-template-columns: 1fr 1fr; }           /* IN / OUT */
+.seg.seg-grid.seg-action { grid-template-columns: repeat(3, 1fr); }     /* TAKE / S/M / FOUL / BIP / HBP (wraps) */
+.seg.seg-grid.seg-type   { grid-template-columns: repeat(3, 1fr); }     /* FB / CB / SL / CH / SF / SI / OTHER */
+
+/* Keep your existing .seg styles, just add some polish for active + focus */
+.seg button.active{box-shadow:0 0 0 2px rgba(19,41,75,.08) inset}
+.seg button:focus-visible{outline:3px solid #cfe4ff; outline-offset:2px}
+
+/* Make the velo/spin control read well on phones: slider + number box grid */
+.slider-wrap{
+  display: grid; 
+  grid-template-columns: 1fr 140px;   /* slider | numeric box */
+  gap: 10px; 
+  align-items: center;
+}
+.slider-wrap input[type="range"]{ width: 100% }
+.badge-input{
+  font-size: 16px; 
+  padding: 10px; 
+  border:1px solid var(--border); 
+  border-radius:10px; 
+  text-align:center;
+}
+
+/* Sticky bottom action bar so Miss/Submit stay reachable on mobile */
+.action-bar{
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(247,247,251,0), rgba(247,247,251,1) 35%);
+  padding: 10px 4px 4px;
+}
+.action-bar .primary,
+.action-bar .secondary{
+  flex: 1 1 0;
+  font-size: 16px;
+  padding: 14px;
+}
+
+/* Small nudge so labels breathe a bit on phones */
+#scout-new label{ margin-top: 2px }
 </style>
 </head>
 <body>
@@ -164,14 +220,14 @@
         <div style="height:8px"></div>
         <h2>Pitch Details</h2>
         <label>Zone</label>
-        <div class="seg sm" id="zoneSeg">
+        <div class="seg sm seg-grid seg-zone" id="zoneSeg">
           <button type="button" data-val="IN">IN</button>
           <button type="button" data-val="OUT">OUT</button>
         </div>
 
         <div style="height:10px"></div>
         <label>Action</label>
-        <div class="seg sm" id="actionSeg">
+        <div class="seg sm seg-grid seg-action" id="actionSeg">
           <button type="button" data-val="TAKE">Take</button>
           <button type="button" data-val="S/M">S/M</button>
           <button type="button" data-val="FOUL">Foul</button>
@@ -181,7 +237,7 @@
 
         <div style="height:10px"></div>
         <label>Pitch Type</label>
-        <div class="seg sm" id="pitchTypeSeg">
+        <div class="seg sm seg-grid seg-type" id="pitchTypeSeg">
           <button type="button" data-val="FB">FB</button>
           <button type="button" data-val="CB">CB</button>
           <button type="button" data-val="SL">SL</button>
@@ -210,9 +266,8 @@
         </div>
 
         <div style="height:12px"></div>
-        <div class="actions-row">
+        <div class="action-bar" id="pitchActionBar">
           <button class="secondary" id="missPitchBtn" title="Logs row with blanks">Miss Pitch</button>
-          <div class="right"></div>
           <button class="primary" id="submitPitchBtn">Submit Pitch</button>
         </div>
         <div class="hint" style="margin-top:6px">After each submission, all pitch details reset to unselected and NA.</div>
