@@ -130,6 +130,32 @@
 
 /* Small nudge so labels breathe a bit on phones */
 #scout-new label{ margin-top: 2px }
+  /* Force grid buttons to win over legacy .seg rules */
+.seg.seg-grid button{
+  min-width: 0 !important;   /* beats old min-width */
+  width: 100% !important;
+  min-height: 52px;
+  flex: 0 0 auto !important; /* neutralize old flex behavior */
+}
+
+/* Ensure slider area uses the grid layout, not old flex */
+.slider-wrap{
+  display: grid !important;
+  grid-template-columns: 1fr 140px;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Sticky action bar that respects iOS safe area */
+.action-bar{
+  position: -webkit-sticky; /* iOS */
+  position: sticky;
+  padding: 10px 4px calc(6px + env(safe-area-inset-bottom));
+  background-clip: padding-box;
+}
+
+/* Prevent any tiny sideways scroll on iOS */
+html, body { overflow-x: hidden; }
 </style>
 </head>
 <body>
@@ -265,7 +291,6 @@
           </div>
         </div>
 
-        <div style="height:12px"></div>
         <div class="action-bar" id="pitchActionBar">
           <button class="secondary" id="missPitchBtn" title="Logs row with blanks">Miss Pitch</button>
           <button class="primary" id="submitPitchBtn">Submit Pitch</button>
