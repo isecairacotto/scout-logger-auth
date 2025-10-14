@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta id="viewportMeta" name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Scout Logger</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#13294B">
@@ -203,6 +203,13 @@
   /* Make the logged list slightly taller on compact devices */
   #scout-new .logged-wrap{ max-height:45vh }
 }
+
+/* Prevent iOS from auto “text-size-adjusting” and nudging layout */
+html, body { -webkit-text-size-adjust: 100%; }
+
+/* Make absolutely sure text fields in New Event are 16px (no auto-zoom on focus) */
+#scout-new input[type="text"],
+#scout-new select { font-size: 16px; }
 </style>
 </head>
 <body>
@@ -638,6 +645,25 @@ window.adminEventsTableBody = adminEventsTableBody;
     logout1.addEventListener('click', ()=>{ clearSession(); loggerBooted=false; routeByRole(); });
     logout2.addEventListener('click', ()=>{ clearSession(); loggerBooted=false; routeByRole(); });
 
+    // Briefly lock the viewport to scale=1 to defeat iOS "stuck zoom",
+    // then restore the original (pinch-zoom remains available).
+    function forcePhoneScaleOne(){
+      const meta = document.getElementById('viewportMeta')
+        || document.querySelector('meta[name="viewport"]');
+      if (!meta) return;
+
+      const original = meta.getAttribute('content') || 'width=device-width, initial-scale=1';
+      const locked   = original.includes('maximum-scale=1')
+        ? original
+        : `${original}, maximum-scale=1, user-scalable=no`;
+
+      meta.setAttribute('content', locked);
+      // Nudge scroll so Safari re-centers at the top at the same time
+      setTimeout(() => window.scrollTo(0, 0), 0);
+      // Restore original quickly so users can still pinch-zoom later
+      setTimeout(() => meta.setAttribute('content', original), 300);
+    }
+
     // ---------- Scout Tabs ----------
     scoutTabs.addEventListener('click',(e)=>{
       const t=e.target.closest('.tab'); if(!t) return;
@@ -646,7 +672,11 @@ window.adminEventsTableBody = adminEventsTableBody;
       const tab=t.dataset.tab;
       panelHistory.classList.toggle('hidden', tab!=='history');
       panelNew.classList.toggle('hidden', tab!=='new');
-      if(tab==='new') initLoggerOnce();
+      if(tab==='new') {
+        initLoggerOnce();
+        forcePhoneScaleOne();
+        setTiemout(forcePhoneScale, 50);
+      }
       if(tab==='history') renderEventsTable();
     });
 
@@ -697,6 +727,7 @@ window.adminEventsTableBody = adminEventsTableBody;
         const n=clamp(parseInt(v)||0, VELO_MIN, VELO_MAX);
         veloTouched=true; veloBox.value=String(n);
         blurActive();
+        forcePhoneScaleOne();
       }
       
       function commitSpinBox(){
@@ -705,6 +736,7 @@ window.adminEventsTableBody = adminEventsTableBody;
         const n=clamp(parseInt(v)||0, SPIN_MIN, SPIN_MAX);
         spinTouched=true; spinBox.value=String(n);
         blurActive();
+        forcePhoneScaleOne();
       }
       
       veloBox.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitVeloBox(); veloBox.blur(); }});
