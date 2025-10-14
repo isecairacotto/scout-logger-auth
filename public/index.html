@@ -536,6 +536,14 @@ html, body { -webkit-text-size-adjust: 100%; }
     const submitPitchBtn=document.getElementById('submitPitchBtn'), missPitchBtn=document.getElementById('missPitchBtn'), pitchTableBody=document.querySelector('#pitchTable tbody'), countHint=document.getElementById('countHint');
     const togglePitchesBtn = document.getElementById('togglePitchesBtn');
     let showAllPitches = false;
+    if (togglePitchesBtn) {
+      togglePitchesBtn.addEventListener('click', () => {
+        showAllPitches = !showAllPitches;
+        renderTable();
+        const wrap = document.querySelector('.logged-wrap');
+        if (wrap) wrap.scrollTop = 0; 
+      });
+    }
     const submitEventOpenBtn=document.getElementById('submitEventOpenBtn'), eventSection=document.getElementById('eventSection');
     const eventDate=document.getElementById('eventDate'), scoutName=document.getElementById('scoutName'), eventName=document.getElementById('eventName'), eventLocation=document.getElementById('eventLocation');
     const dspToggle=document.getElementById('dspToggle'), dspChecklist=document.getElementById('dspChecklist'), finalSubmitBtn=document.getElementById('finalSubmitBtn'), eventMsg=document.getElementById('eventMsg');
@@ -897,46 +905,51 @@ rosterList?.addEventListener('click', (e)=>{
         pitchTableBody.innerHTML = '';
 
         const total = pitches.length;
+        const ordered = pitches.slice().reverse();
+        const visibleCount = showAllPitches ? total : Math.min(5,total);
+        const rowsToRender = ordered.slice(0, visibleCount);
 
-        // Build index list newest -> oldest
-        const allIdx = [];
-        for (let i = total - 1; i >= 0; i--) allIdx.push(i);
 
-        // Decide which indices to show
-        const idxsToShow = showAllPitches ? allIdx : allIdx.slice(0, 5);
-
-        // Render only the chosen indices
-        idxsToShow.forEach(idx => {
-          const r = pitches[idx];
+        rowsToRender.forEach((r, i) => {
+          // map back to original index for edit/delete to keep working
+          const origIdx = pitches.length - 1 - i;                     // because we reversed
           const tr = document.createElement('tr');
-          tr.dataset.index = idx; // keep original index for edit/delete
+          tr.dataset.index = String(origIdx);
           tr.innerHTML = `
-          <td>${r.time||''}</td><td>${r.pitcher||''}</td><td>${r.hitter||''}</td>
-          <td>${r.zone||''}</td><td>${r.action||''}</td><td>${r.pitchType||''}</td>
-          <td>${r.velo??''}</td><td>${r.spin??''}</td>
-          <td><div class="cell-actions">
+          <td>${r.time||''}</td>
+          <td>${r.pitcher||''}</td>
+          <td>${r.hitter||''}</td>
+          <td>${r.zone||''}</td>
+          <td>${r.action||''}</td>
+          <td>${r.pitchType||''}</td>
+          <td>${r.velo??''}</td>
+          <td>${r.spin??''}</td>
+          <td>
+          <div class="cell-actions">
           <button class="icon-btn edit-btn" title="Edit row"><svg width="18" height="18"><use href="#ico-edit"/></svg></button>
           <button class="icon-btn del-btn"  title="Delete pitch"><svg width="18" height="18"><use href="#ico-x"/></svg></button>
-          </div></td>`;
-          pitchTableBody.appendChild(tr);
-        });
+        </div>
+      </td>`;
+    pitchTableBody.appendChild(tr);
+  });
 
-        // Update count label
-        countHint.textContent = `${total} ${total===1?'pitch':'pitches'}`;
+  // count text
+  countHint.textContent = showAllPitches
+    ? `${total} ${total===1?'pitch':'pitches'}`
+    : `${visibleCount} of ${total} ${total===1?'pitch':'pitches'}`;
 
-        // Show/label the toggle if there are more than 5
-        if (togglePitchesBtn){
-          if (total > 5){
-            togglePitchesBtn.style.display = '';
-            const hidden = Math.max(0, total - 5);
-            togglePitchesBtn.textContent = showAllPitches
-              ? 'Hide older ▴'
-              : `Show all (${hidden} more) ▾`;
-          } else {
-            togglePitchesBtn.style.display = 'none';
-          }
-        }
-      }
+  // toggle button visibility + label
+  if (togglePitchesBtn) {
+    if (total > 5) {
+      togglePitchesBtn.style.display = 'inline-block';
+      togglePitchesBtn.textContent = showAllPitches
+        ? 'Show less'
+        : `Show ${total - 5} more`;
+    } else {
+      togglePitchesBtn.style.display = 'none';
+    }
+  }
+}
 
       togglePitchesBtn?.addEventListener('click', () => {
         showAllPitches = !showllPitches;
