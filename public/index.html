@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Scout Logger</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#13294B">
@@ -15,7 +15,14 @@
     --card:#ffffff; --border:#e6e6ef; --ok:#198754; --warn:#c27d0e;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  html,body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-text-size-adjust:100%;
+    text-size-adjust:100%;
+  }
   header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:2px solid var(--red);display:flex;align-items:center;justify-content:space-between;padding:10px 14px}
   .brand h1{font-size:18px;margin:0;color:var(--navy);letter-spacing:.3px}
   .logo img{height:28px;width:auto;display:block}
@@ -159,6 +166,42 @@
 #scout-new #pitchActionBlock .secondary{
   width:60%; justify-self:center;
   padding:14px; font-size:16px; font-weight:700; border-radius:12px;
+}
+
+
+/* Keep Submit visible; retains your existing grid layout */
+#scout-new #pitchActionBlock{
+  position:-webkit-sticky;
+  position:sticky;
+  bottom:0;
+  z-index:5;
+  display:grid;
+  gap:8px;
+  margin-top:10px;
+  padding:10px 4px calc(6px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg, rgba(247,247,251,0), rgba(247,247,251,1) 35%);
+  background-clip:padding-box;
+}
+
+/* Mobile compaction so everything fits without pinching */
+@media (max-width: 420px){
+  main{ padding:10px }
+  .card{ padding:12px }
+  .grid{ gap:10px }
+  .card h2{ margin:6px 0 8px 0; font-size:13px }
+  label{ margin-bottom:4px }
+  /* Let two-column groups shrink cleanly */
+  .grid.cols-2 > div{ min-width:0 }
+
+  /* Touch targets still comfy, but a bit tighter */
+  #scout-new .seg.seg-grid button{ padding:12px 10px; min-height:48px }
+
+  /* Inputs stay 16px to avoid iOS zoom */
+  #scout-new input[type="text"], 
+  #scout-new select{ font-size:16px }
+
+  /* Make the logged list slightly taller on compact devices */
+  #scout-new .logged-wrap{ max-height:45vh }
 }
 </style>
 </head>
@@ -643,18 +686,25 @@ window.adminEventsTableBody = adminEventsTableBody;
       veloBox.value=''; spinBox.value='';
       const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 
+      const blurActive = () => {
+        const el = document.activeElement;
+        if (el && typeof el.blur === 'function') el.blur();
+      };
+
       function commitVeloBox(){
         const v=veloBox.value.trim();
-        if(v===''||v.toUpperCase()==='NA'){ veloTouched=false; veloBox.value=''; return; }
+        if(v===''||v.toUpperCase()==='NA'){ veloTouched=false; veloBox.value=''; blurActive(); return; }
         const n=clamp(parseInt(v)||0, VELO_MIN, VELO_MAX);
         veloTouched=true; veloBox.value=String(n);
+        blurActive();
       }
       
       function commitSpinBox(){
         const v=spinBox.value.trim();
-        if(v===''||v.toUpperCase()==='NA'){ spinTouched=false; spinBox.value=''; return; }
+        if(v===''||v.toUpperCase()==='NA'){ spinTouched=false; spinBox.value=''; blurActive(); return; }
         const n=clamp(parseInt(v)||0, SPIN_MIN, SPIN_MAX);
         spinTouched=true; spinBox.value=String(n);
+        blurActive();
       }
       
       veloBox.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitVeloBox(); veloBox.blur(); }});
@@ -879,6 +929,7 @@ rosterList?.addEventListener('click', (e)=>{
       }
 
       function submitPitch(){
+        blurActive();
         const sel=getSelections(); if(!sel) return;
         const row={
           time:nowStamp(),
@@ -895,6 +946,7 @@ rosterList?.addEventListener('click', (e)=>{
         resetPitchForm();
       }
       function missPitch(){
+        blurActive();
         const sel=getSelections(); if(!sel) return;
         const row={ time:nowStamp(), pitcher:sel.pitcher, hitter:sel.hitter, zone:'', action:'', pitchType:'', velo:'', spin:'' };
         pitches.push(row); saveJSON(K_PITCHES,pitches); renderTable();
