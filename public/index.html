@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover", id="vp">
+<meta id="vp" name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Scout Logger</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#13294B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <style>
   html { -webkit-text-size-adjust: 100%; }
@@ -226,7 +227,7 @@ html, body { -webkit-text-size-adjust: 100%; }
       <h2>Login</h2>
       <div class="grid cols-2">
         <div><label>Username</label><input id="loginUser" type="text" placeholder="username" autocomplete="username" autocapitalize="none" spellcheck="false" inputmode="email" /></div>
-        <div><label>Password</label><input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" autocapitalize="none" autocorrect="none" spellcheck="false" /></div>
+        <div><label>Password</label><input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" /></div>
       </div>
       <div class="row" style="margin-top:10px">
         <button id="loginBtn" class="primary">Sign in</button>
@@ -456,7 +457,7 @@ html, body { -webkit-text-size-adjust: 100%; }
     <symbol id="ico-x" viewBox="0 0 24 24"><path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L10.59 13.4 4.3 19.71 2.89 18.3 9.17 12 2.89 5.71 4.3 4.29 10.59 10.6l6.3-6.3z"/></symbol>
   </svg>
 
-  <script src="/db.js"></script>
+  <script src="/db.js?v=2025-10-15a"></script>
   <script>
 
     // ---------- API helper ----------
@@ -527,7 +528,8 @@ html, body { -webkit-text-size-adjust: 100%; }
     // New Event elements
     const roleSeg=document.getElementById('roleSeg'), zoneSeg=document.getElementById('zoneSeg'), actionSeg=document.getElementById('actionSeg'), pitchTypeSeg=document.getElementById('pitchTypeSeg');
     const addPlayerBtn=document.getElementById('addPlayerBtn'), playerNameInput=document.getElementById('playerName'), pitcherSelect=document.getElementById('pitcherSelect'), batterSelect=document.getElementById('batterSelect');
-    const velo=document.getElementById('velo'), spin=document.getElementById('spin'), veloBox=document.getElementById('veloBox'), spinBox=document.getElementById('spinBox');
+    const veloBox=document.getElementById('veloBox');
+    const spinBox=document.getElementById('spinBox');
     const submitPitchBtn=document.getElementById('submitPitchBtn'), missPitchBtn=document.getElementById('missPitchBtn'), pitchTableBody=document.querySelector('#pitchTable tbody'), countHint=document.getElementById('countHint');
     const submitEventOpenBtn=document.getElementById('submitEventOpenBtn'), eventSection=document.getElementById('eventSection');
     const eventDate=document.getElementById('eventDate'), scoutName=document.getElementById('scoutName'), eventName=document.getElementById('eventName'), eventLocation=document.getElementById('eventLocation');
@@ -668,25 +670,6 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
     logout1.addEventListener('click', ()=>{ clearSession(); loggerBooted=false; routeByRole(); });
     logout2.addEventListener('click', ()=>{ clearSession(); loggerBooted=false; routeByRole(); });
 
-    // Briefly lock the viewport to scale=1 to defeat iOS "stuck zoom",
-    // then restore the original (pinch-zoom remains available).
-    function forcePhoneScaleOne(){
-      const meta = document.getElementById('viewportMeta')
-        || document.querySelector('meta[name="viewport"]');
-      if (!meta) return;
-
-      const original = meta.getAttribute('content') || 'width=device-width, initial-scale=1';
-      const locked   = original.includes('maximum-scale=1')
-        ? original
-        : `${original}, maximum-scale=1, user-scalable=no`;
-
-      meta.setAttribute('content', locked);
-      // Nudge scroll so Safari re-centers at the top at the same time
-      setTimeout(() => window.scrollTo(0, 0), 0);
-      // Restore original quickly so users can still pinch-zoom later
-      setTimeout(() => meta.setAttribute('content', original), 300);
-    }
-
     // ---------- Scout Tabs ----------
     scoutTabs.addEventListener('click',(e)=>{
       const t=e.target.closest('.tab'); if(!t) return;
@@ -742,11 +725,6 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
       let veloTouched=false, spinTouched=false;
       veloBox.value=''; spinBox.value='';
       const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
-
-      const blurActive = () => {
-        const el = document.activeElement;
-        if (el && typeof el.blur === 'function') el.blur();
-      };
 
       function commitVeloBox(){
         const v=veloBox.value.trim();
@@ -1140,7 +1118,7 @@ rosterList?.addEventListener('click', (e)=>{
               const ct=(r.headers.get('content-type')||'').toLowerCase();
               if (r.status === 202 && ct.includes('application/json')) {
                 const j = await r.json();
-                if (j.quedued) {
+                if (j.queued) {
                   eventMsg.innerHTML = '<div class="success">Saved locally - will sync when online.</div>';
                 }
               } else if (!r.ok || !ct.includes('application/json')) {
@@ -1311,7 +1289,7 @@ function renderEventsTable(){
       const evts=loadJSON(K_EVENTS, []);
       if(!evts.length){ alert('No events to export.'); return; }
       const headers=['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
-      const rows=evts.flatMap(e=>e.rows.map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin})));
+      const rows=evts.flatMap(e=> (e.rows || []).map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin})));
       download(`${user}-all-events.csv`, toCSV(rows, headers));
     });
 
