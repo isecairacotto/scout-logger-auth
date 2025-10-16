@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta id="vp" name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scout Logger</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#13294B">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -106,8 +107,25 @@
   min-height: 52px;
 }
 
-input, select, textarea, button { font-size: 16px;}
-
+/* Sticky Miss/Submit action bar with iOS safe-area */
+#scout-new .action-bar{
+  position: -webkit-sticky;  /* iOS Safari */
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex !important;
+  gap: 10px;
+  padding: 10px 4px calc(6px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(247,247,251,0), rgba(247,247,251,1) 35%);
+  background-clip: padding-box;
+}
+#scout-new .action-bar .primary,
+#scout-new .action-bar .secondary{
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  font-size: 16px;
+  padding: 14px;
+}
 
 /* ===== Collapsible roster UI (compact, mobile-friendly) ===== */
 .roster-toggle{
@@ -165,14 +183,6 @@ input, select, textarea, button { font-size: 16px;}
   padding:10px 4px calc(6px + env(safe-area-inset-bottom));
   background:linear-gradient(180deg, rgba(247,247,251,0), rgba(247,247,251,1) 35%);
   background-clip:padding-box;
-
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .18s ease;
-}
-#scout-new.show-sticky #pitchActionBlock{
-  opacity:1;
-  pointer-events:auto;
 }
 
 /* Mobile compaction so everything fits without pinching */
@@ -542,30 +552,27 @@ const topbar               = document.getElementById('topbar');
 window.adminScoutSelect     = adminScoutSelect;
 window.adminEventsTableBody = adminEventsTableBody;
 
-// Small utility you already referenced; keep it if you have it, otherwise add:
-function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
-
-// Viewport lock helpers (prevents iOS zoom on focus when ON)
+    // ----- Viewport scale helpers (iOS zoom control) -----
 const VP_BASE   = "width=device-width, initial-scale=1, viewport-fit=cover";
 const VP_LOCKED = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
 
-(function ensureViewportTag(){
-  let tag = document.getElementById('vp');
-  if (!tag) {
-    tag = document.createElement('meta');
-    tag.id = 'vp';
-    tag.name = 'viewport';
-    tag.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
-    document.head.appendChild(tag);
-  }
-})();    
-    
 function setViewportLock(lock){
   const tag = document.getElementById('vp');
   if (!tag) return;
+  // Only change if needed (prevents layout thrash)
   const want = lock ? VP_LOCKED : VP_BASE;
   if (tag.getAttribute('content') !== want) tag.setAttribute('content', want);
 }
+
+function forcePhoneScaleOne(){
+  // Toggle to locked and back to normalize any lingering zoom
+  setViewportLock(true);
+  // microtask -> give Safari a beat, then keep it locked on "New Event"
+  requestAnimationFrame(()=>{ setViewportLock(true); });
+}
+
+// Small utility you already referenced; keep it if you have it, otherwise add:
+function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
 
 
     // ---------- Session & Storage ----------
@@ -674,10 +681,11 @@ function setViewportLock(lock){
       panelNew.classList.toggle('hidden', tab!=='new');
       
       if(tab==='new') {
+        setViewportLock(true);
         initLoggerOnce();
-            try{ document.activeElement?.blur(); }catch{}
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        requestAnimationFrame(forcePhoneScaleOne); 
       } else {
+        setViewportLock(false);
         renderEventsTable();
       }
     });
@@ -713,46 +721,6 @@ function setViewportLock(lock){
       actionSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(actionSeg,e.target); });
       pitchTypeSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(pitchTypeSeg,e.target); });
 
-// Stop iOS zoom only while typing in New Event inputs
-(function mountFocusZoomGuard(){
-  const panel = document.getElementById('scout-new');
-  if (!panel || panel.__zoomGuard) return;
-  panel.__zoomGuard = true;
-
-  const isFormControl = el => el && el.matches('input, select, textarea');
-
-  panel.addEventListener('focusin', (e) => {
-    if (isFormControl(e.target)) setViewportLock(true);
-  });
-
-  panel.addEventListener('focusout', () => {
-    // Wait a tick; if focus moved inside another control, keep locked
-    setTimeout(() => {
-      const a = document.activeElement;
-      const stillTyping = panel.contains(a) && isFormControl(a);
-      if (!stillTyping) setViewportLock(false);
-    }, 0);
-  });
-})();
-
-      // --- Show sticky Submit/Miss bar only when Pitch Details section is visible
-      (function mountStickyReveal(){
-        if (window.__stickyIO) return; // avoid double observer
-          const target = document.getElementById('pitchTypeSeg') 
-                      || document.getElementById('actionSeg') 
-                      || document.getElementById('zoneSeg');
-          const panel  = document.getElementById('scout-new');
-          if (!target || !panel) return;
-
-        const io = new IntersectionObserver((entries)=>{
-          const visible = entries.some(en => en.isIntersecting);
-          panel.classList.toggle('show-sticky', visible);
-        }, { root: null, threshold: 0.01 });
-
-        io.observe(target);
-        window.__stickyIO = io;
-      })(); 
-
       const VELO_MIN=50, VELO_MAX=105, SPIN_MIN=500, SPIN_MAX=4000;
       let veloTouched=false, spinTouched=false;
       veloBox.value=''; spinBox.value='';
@@ -764,6 +732,7 @@ function setViewportLock(lock){
         const n=clamp(parseInt(v)||0, VELO_MIN, VELO_MAX);
         veloTouched=true; veloBox.value=String(n);
         blurActive();
+        forcePhoneScaleOne();
       }
       
       function commitSpinBox(){
@@ -772,6 +741,7 @@ function setViewportLock(lock){
         const n=clamp(parseInt(v)||0, SPIN_MIN, SPIN_MAX);
         spinTouched=true; spinBox.value=String(n);
         blurActive();
+        forcePhoneScaleOne();
       }
       
       veloBox.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitVeloBox(); veloBox.blur(); }});
