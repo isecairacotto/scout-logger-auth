@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta id="vp name="viewport"
-      content="width=device-width, inital-scale=1, maximum-scale=1, user-scale=no, viewport-fit=cover">
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#13294B">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -654,9 +654,8 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
       
       if(tab==='new') {
         initLoggerOnce();
-          try{ document.activeElement?.blur(); }catch{}
-          window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); 
-        });
+            try{ document.activeElement?.blur(); }catch{}
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       } else {
         renderEventsTable();
       }
