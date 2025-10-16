@@ -276,7 +276,7 @@ html, body { -webkit-text-size-adjust: 100%; }
           Create Player <span class="chev">▾</span>
         </button>
 
-        <div id="createPanel" class="roster-toggle" aria-expanded="false">
+        <div id="createPanel" class="roster-panel hidden" aria-expanded="true">
           <div class="grid cols-2">
             <div>
               <label>Last, First</label>
@@ -793,7 +793,7 @@ const rosterDoneBtn = document.getElementById('rosterDoneBtn');
 
       createToggle?.addEventListener('click', ()=>{
         const open = createPanel.classList.contains('hidden');
-        setCreateOpen(open);
+        setCreateOpen(false);
       });
 
 function setRosterOpen(open){
