@@ -636,13 +636,7 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
 
     function routeByRole(){
       const s=loadSession();
-      if(!s){
-        show(vLogin);
-        topbar.textContent='';
-        setViewportLock(false);
-        requestAnimationFrame(forcePhoneScaleOne);
-        return;
-      }
+      if(!s){ show(vLogin); topbar.textContent=''; return; }
       const isLocal = s.token === 'local';
       loggerBooted=false;
 
@@ -651,8 +645,6 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
         topbar.textContent=`${s.fullName} — Admin`;
         show(vAdmin);
         initAdminUI();
-        setViewportLock(false);
-        requestAnimationFrame(forcePhoneScaleOne);
 
         adminScoutsTab.classList.add('active');
         adminNewTab.classList.remove('active');
@@ -665,8 +657,6 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
         show(vScout);
         panelHistory.classList.remove('hidden');
         panelNew.classList.add('hidden');
-        setViewportLock(false);
-        requestAnimationFrame(forcePhoneScaleOne);
         if(typeof renderEventsTable==='function') renderEventsTable();
       }
     }
@@ -681,26 +671,24 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
     logout2.addEventListener('click', ()=>{ clearSession(); loggerBooted=false; routeByRole(); });
 
     // ---------- Scout Tabs ----------
-scoutTabs.addEventListener('click',(e)=>{
-  const t=e.target.closest('.tab'); if(!t) return;
-  scoutTabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active');
-  const tab=t.dataset.tab;
-
-  panelHistory.classList.toggle('hidden', tab!=='history');
-  panelNew.classList.toggle('hidden', tab!=='new');
-
-  if (tab === 'new') {
-    initLoggerOnce();           // build the New Event UI
-  } else {
-    renderEventsTable();        // show history list
-  }
-
-  // Always normalize the scale back to 1 when switching tabs.
-  // (Locking happens only during input focus via the guard above.)
-  requestAnimationFrame(forcePhoneScaleOne);
-});
-
+    scoutTabs.addEventListener('click',(e)=>{
+      const t=e.target.closest('.tab'); if(!t) return;
+      scoutTabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      const tab=t.dataset.tab;
+      
+      panelHistory.classList.toggle('hidden', tab!=='history');
+      panelNew.classList.toggle('hidden', tab!=='new');
+      
+      if(tab==='new') {
+        setViewportLock(true);
+        initLoggerOnce();
+        requestAnimationFrame(forcePhoneScaleOne); 
+      } else {
+        setViewportLock(false);
+        renderEventsTable();
+      }
+    });
 
     // ---------- Logger ----------
     const MLB_TEAMS=['ARI','ATL','BAL','BOS','CHC','CIN','CLE','COL','CWS','DET','HOU','KC','LAA','LAD','MIA','MIL','MIN','NYM','NYY','OAK','PHI','PIT','SD','SEA','SF','STL','TB','TEX','TOR','WSH'];
@@ -732,29 +720,6 @@ scoutTabs.addEventListener('click',(e)=>{
       zoneSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(zoneSeg,e.target); });
       actionSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(actionSeg,e.target); });
       pitchTypeSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(pitchTypeSeg,e.target); });
-
-      // -- Prevent iOS focus zoom while typing in New Event --
-      (function mountFocusZoomGuard(){
-        const panel = document.getElementById('scout-new');
-        if (!panel || panel.__zoomGuard) return;
-        panel.__zoomGuard = true;
-
-        const isFormControl = el => el && el.matches('input, select, textarea');
-
-        panel.addEventListener('focusin', (e) => {
-          if (isFormControl(e.target)) setViewportLock(true);
-        });
-
-        panel.addEventListener('focusout', () => {
-          // if focus left all inputs in New Event, unlock
-          setTimeout(() => {
-            const a = document.activeElement;
-            const stillTyping = panel.contains(a) && isFormControl(a);
-            if (!stillTyping) setViewportLock(false);
-          }, 0);
-        });
-      })();
-
 
       const VELO_MIN=50, VELO_MAX=105, SPIN_MIN=500, SPIN_MAX=4000;
       let veloTouched=false, spinTouched=false;
@@ -1532,7 +1497,6 @@ function renderEventsTable(){
     // ---------- Boot ----------
     document.getElementById('topbar').textContent='';
     routeByRole();
-    requestAnimationFrame(forcePhoneScaleOne);
   })();
   </script>
 </body>
