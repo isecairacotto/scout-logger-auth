@@ -107,25 +107,6 @@
   min-height: 52px;
 }
 
-/* Sticky Miss/Submit action bar with iOS safe-area */
-#scout-new .action-bar{
-  position: -webkit-sticky;  /* iOS Safari */
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  display: flex !important;
-  gap: 10px;
-  padding: 10px 4px calc(6px + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, rgba(247,247,251,0), rgba(247,247,251,1) 35%);
-  background-clip: padding-box;
-}
-#scout-new .action-bar .primary,
-#scout-new .action-bar .secondary{
-  flex: 1 1 0 !important;
-  min-width: 0 !important;
-  font-size: 16px;
-  padding: 14px;
-}
 
 /* ===== Collapsible roster UI (compact, mobile-friendly) ===== */
 .roster-toggle{
@@ -183,6 +164,14 @@
   padding:10px 4px calc(6px + env(safe-area-inset-bottom));
   background:linear-gradient(180deg, rgba(247,247,251,0), rgba(247,247,251,1) 35%);
   background-clip:padding-box;
+
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease;
+}
+#scout-new.show-sticky #pitchActionBlock{
+  opacity:1;
+  pointer-events:auto;
 }
 
 /* Mobile compaction so everything fits without pinching */
@@ -683,7 +672,12 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
       if(tab==='new') {
         setViewportLock(true);
         initLoggerOnce();
-        requestAnimationFrame(forcePhoneScaleOne); 
+        requestAnimationFrame(() => {
+          forcePhoneScaleOne();
+          // kill any stray focus and jump to the top
+          try{ document.activeElement?.blur(); }catch{}
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); 
+        });
       } else {
         setViewportLock(false);
         renderEventsTable();
@@ -720,6 +714,24 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
       zoneSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(zoneSeg,e.target); });
       actionSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(actionSeg,e.target); });
       pitchTypeSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(pitchTypeSeg,e.target); });
+
+      // --- Show sticky Submit/Miss bar only when Pitch Details section is visible
+      (function mountStickyReveal(){
+        if (window.__stickyIO) return; // avoid double observer
+          const target = document.getElementById('pitchTypeSeg') 
+                      || document.getElementById('actionSeg') 
+                      || document.getElementById('zoneSeg');
+          const panel  = document.getElementById('scout-new');
+          if (!target || !panel) return;
+
+        const io = new IntersectionObserver((entries)=>{
+          const visible = entries.some(en => en.isIntersecting);
+          panel.classList.toggle('show-sticky', visible);
+        }, { root: null, threshold: 0.01 });
+
+        io.observe(target);
+        window.__stickyIO = io;
+      })(); 
 
       const VELO_MIN=50, VELO_MAX=105, SPIN_MIN=500, SPIN_MAX=4000;
       let veloTouched=false, spinTouched=false;
