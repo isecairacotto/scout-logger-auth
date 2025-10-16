@@ -376,7 +376,11 @@ html, body { -webkit-text-size-adjust: 100%; }
 
         <div style="height:12px"></div>
         <h2>Logged Pitches</h2>
-        <div class="row" style="margin-bottom:6px"><span class="hint" id="countHint">0 pitches</span></div>
+        <div class="row" style="margin-bottom:6px">
+          <span class="hint" id="countHint">0 pitches</span>
+          <div class="right"></div>
+          <button class="ghost" id="togglePitchListBtn" style="display:none">Show all ▾</button>
+        </div>
         <div class="logged-wrap" style="margin-top:8px">
           <table id="pitchTable">
             <thead>
@@ -534,7 +538,7 @@ html, body { -webkit-text-size-adjust: 100%; }
 
     // New Event elements
     const roleSeg=document.getElementById('roleSeg'), zoneSeg=document.getElementById('zoneSeg'), actionSeg=document.getElementById('actionSeg'), pitchTypeSeg=document.getElementById('pitchTypeSeg');
-    const addPlayerBtn=document.getElementById('addPlayerBtn'), playerNameInput=document.getElementById('playerName'), pitcherSelect=document.getElementById('pitcherSelect'), batterSelect=document.getElementById('batterSelect');
+    const addPlayerBtn=document.getElementById('addPlayerBtn'), playerNameInput=document.getElementById('playerName'), pitcherSelect=document.getElementById('pitcherSelect'), batterSelect=document.getElementById('batterSelect'), togglePitchListBtn = document.getElementById('togglePitchListBtn');
     const veloBox=document.getElementById('veloBox');
     const spinBox=document.getElementById('spinBox');
     const submitPitchBtn=document.getElementById('submitPitchBtn'), missPitchBtn=document.getElementById('missPitchBtn'), pitchTableBody=document.querySelector('#pitchTable tbody'), countHint=document.getElementById('countHint');
@@ -707,6 +711,8 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
     function addOption(select,text){ const opt=document.createElement('option'); opt.text=text; opt.value=text; select.add(opt); }
 
     let loggerBooted=false;
+    let showAllPitches = false;
+    const RECENT_LIMIT = 5;
     function initLoggerOnce(){
       if(loggerBooted) return; loggerBooted=true;
       const user=getUser();
@@ -890,21 +896,47 @@ rosterList?.addEventListener('click', (e)=>{
 
 
       function renderTable(){
-        pitchTableBody.innerHTML='';
+        pitchTableBody.innerHTML = '';
+
+        const total = pitches.length;
+        let shown = 0;
+
+        // newest → oldest (your existing order)
         for (let idx = pitches.length - 1; idx >= 0; idx--) {
           const r = pitches[idx];
-          const tr=document.createElement('tr'); tr.dataset.index=idx;
-          tr.innerHTML=`
+          const tr = document.createElement('tr');
+          tr.dataset.index = idx;
+
+          // hide older rows when collapsed
+          const shouldHide = !showAllPitches && shown >= RECENT_LIMIT;
+          if (shouldHide) tr.style.display = 'none';
+
+          tr.innerHTML = `
           <td>${r.time||''}</td><td>${r.pitcher||''}</td><td>${r.hitter||''}</td>
           <td>${r.zone||''}</td><td>${r.action||''}</td><td>${r.pitchType||''}</td>
           <td>${r.velo??''}</td><td>${r.spin??''}</td>
-          <td><div class="cell-actions">
-          <button class="icon-btn edit-btn" title="Edit row"><svg width="18" height="18"><use href="#ico-edit"/></svg></button>
-          <button class="icon-btn del-btn" title="Delete pitch"><svg width="18" height="18"><use href="#ico-x"/></svg></button>
-          </div></td>`;
+          <td>
+            <div class="cell-actions">
+            <button class="icon-btn edit-btn" title="Edit row"><svg width="18" height="18"><use href="#ico-edit"/></svg></button>
+            <button class="icon-btn del-btn" title="Delete pitch"><svg width="18" height="18"><use href="#ico-x"/></svg></button>
+          </div>
+        </td>
+      `;
           pitchTableBody.appendChild(tr);
+
+          shown++;
         }
-        countHint.textContent=`${pitches.length} ${pitches.length===1?'pitch':'pitches'}`;
+
+        // update counter
+        countHint.textContent = `${total} ${total===1?'pitch':'pitches'}`;
+
+        // show/hide the toggle button
+        if (total > RECENT_LIMIT) {
+          togglePitchListBtn.style.display = 'inline-block';
+          togglePitchListBtn.textContent = showAllPitches ? 'Show less ▴' : `Show all (${total}) ▾`;
+        } else {
+          togglePitchListBtn.style.display = 'none';
+        }
       }
 
       function ensureReviewBar(){
@@ -1003,7 +1035,11 @@ rosterList?.addEventListener('click', (e)=>{
           velo: veloTouched ? Number(veloBox.value) : '',
           spin: spinTouched ? Number(spinBox.value) : ''
         };
-        pitches.push(row); saveJSON(K_PITCHES,pitches); renderTable();
+        pitches.push(row);
+        saveJSON(K_PITCHES, pitches);
+        showAllPitches = false;   // collapse back after a new row
+        renderTable();
+
         submitPitchBtn.textContent='Logged ✓'; setTimeout(()=>submitPitchBtn.textContent='Submit Pitch', 500);
         resetPitchForm();
       }
@@ -1011,12 +1047,22 @@ rosterList?.addEventListener('click', (e)=>{
         blurActive();
         const sel=getSelections(); if(!sel) return;
         const row={ time:nowStamp(), pitcher:sel.pitcher, hitter:sel.hitter, zone:'', action:'', pitchType:'', velo:'', spin:'' };
-        pitches.push(row); saveJSON(K_PITCHES,pitches); renderTable();
+        pitches.push(row);
+        saveJSON(K_PITCHES, pitches);
+        showAllPitches = false;   // collapse back after a new row
+        renderTable();
+
         missPitchBtn.textContent='Miss Logged ✓'; setTimeout(()=>missPitchBtn.textContent='Miss Pitch',500);
         resetPitchForm();
       }
       submitPitchBtn.addEventListener('click', submitPitch);
       missPitchBtn.addEventListener('click',  missPitch);
+
+      togglePitchListBtn?.addEventListener('click', () => {
+        showAllPitches = !showAllPitches;
+        renderTable();
+        document.getElementById('pitchTable')?.scrollIntoView({ block:'nearest' });
+      });
 
       const ACTIONS=['TAKE','S/M','FOUL','BIP','HBP'], PITCH_TYPES=['FB','CB','SL','CH','OTHER','SF','SI'], ZONES=['IN','OUT'];
       function makeSelect(options,val){ const sel=document.createElement('select'); sel.className='cell-select'; const empty=document.createElement('option'); empty.value=''; empty.textContent=''; sel.appendChild(empty); options.forEach(o=>{ const op=document.createElement('option'); op.value=o; op.textContent=o; if(o===val) op.selected=true; sel.appendChild(op); }); return sel; }
@@ -1166,6 +1212,7 @@ saveJSON(K_PITCHES,[]);
 saveJSON(K_PLAYERS,[]);
 pitches = [];               // << hard clear in-memory
 players = [];               // << hard clear in-memory
+showAllPitches = false;
 renderTable();              // reflect the clears immediately
 
 playerNameInput.value=''; eventName.value=''; eventLocation.value=''; scoutName.value='';
@@ -1295,6 +1342,8 @@ function renderEventsTable(){
 
           if (typeof ensureReviewBar === 'function') ensureReviewBar();
 
+          showAllPitches = false;
+
           if (typeof window.reloadLoggerFromStorage === 'function') {
             window.reloadLoggerFromStorage();
           } else {
@@ -1407,6 +1456,7 @@ function renderEventsTable(){
               adminScoutsView.classList.add('hidden'); adminNewView.classList.remove('hidden');
               mountNewEventIntoAdmin();
               if (typeof ensureReviewBar === 'function') ensureReviewBar();
+              showAllPitches = false;
               if(typeof window.reloadLoggerFromStorage==='function'){ window.reloadLoggerFromStorage(); }
               else { initLoggerOnce(); }
               window.scrollTo({top:0,behavior:'smooth'});
