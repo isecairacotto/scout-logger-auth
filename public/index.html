@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta id="vp" name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Scout Logger</title>
+<meta id="vp name="viewport"
+      content="width=device-width, inital-scale=1, maximum-scale=1, user-scale=no, viewport-fit=cover">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#13294B">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -106,6 +106,8 @@
   flex: 0 0 auto !important;        /* neutralize legacy flex */
   min-height: 52px;
 }
+
+input, select, textarea, button { font-size: 16px;}
 
 
 /* ===== Collapsible roster UI (compact, mobile-friendly) ===== */
@@ -541,25 +543,6 @@ const topbar               = document.getElementById('topbar');
 window.adminScoutSelect     = adminScoutSelect;
 window.adminEventsTableBody = adminEventsTableBody;
 
-    // ----- Viewport scale helpers (iOS zoom control) -----
-const VP_BASE   = "width=device-width, initial-scale=1, viewport-fit=cover";
-const VP_LOCKED = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
-
-function setViewportLock(lock){
-  const tag = document.getElementById('vp');
-  if (!tag) return;
-  // Only change if needed (prevents layout thrash)
-  const want = lock ? VP_LOCKED : VP_BASE;
-  if (tag.getAttribute('content') !== want) tag.setAttribute('content', want);
-}
-
-function forcePhoneScaleOne(){
-  // Toggle to locked and back to normalize any lingering zoom
-  setViewportLock(true);
-  // microtask -> give Safari a beat, then keep it locked on "New Event"
-  requestAnimationFrame(()=>{ setViewportLock(true); });
-}
-
 // Small utility you already referenced; keep it if you have it, otherwise add:
 function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
 
@@ -670,16 +653,11 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
       panelNew.classList.toggle('hidden', tab!=='new');
       
       if(tab==='new') {
-        setViewportLock(true);
         initLoggerOnce();
-        requestAnimationFrame(() => {
-          forcePhoneScaleOne();
-          // kill any stray focus and jump to the top
           try{ document.activeElement?.blur(); }catch{}
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); 
         });
       } else {
-        setViewportLock(false);
         renderEventsTable();
       }
     });
