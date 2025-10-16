@@ -793,7 +793,7 @@ const rosterDoneBtn = document.getElementById('rosterDoneBtn');
 
       createToggle?.addEventListener('click', ()=>{
         const open = createPanel.classList.contains('hidden');
-        setCreateOpen(false);
+        setCreateOpen(open);
       });
 
 function setRosterOpen(open){
