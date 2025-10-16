@@ -899,45 +899,44 @@ rosterList?.addEventListener('click', (e)=>{
         pitchTableBody.innerHTML = '';
 
         const total = pitches.length;
-        let shown = 0;
 
-        // newest → oldest (your existing order)
-        for (let idx = pitches.length - 1; idx >= 0; idx--) {
+        // Build an ordered list of original indexes: newest → oldest
+        const indexes = [];
+        for (let idx = pitches.length - 1; idx >= 0; idx--) indexes.push(idx);
+
+        // When collapsed, only render the most recent RECENT_LIMIT
+        const renderIndexes = showAllPitches ? indexes : indexes.slice(0, RECENT_LIMIT);
+
+        for (const idx of renderIndexes) {
           const r = pitches[idx];
           const tr = document.createElement('tr');
-          tr.dataset.index = idx;
-
-          // hide older rows when collapsed
-          const shouldHide = !showAllPitches && shown >= RECENT_LIMIT;
-          if (shouldHide) tr.style.display = 'none';
+          tr.dataset.index = idx; // keep original index for edit/delete
 
           tr.innerHTML = `
           <td>${r.time||''}</td><td>${r.pitcher||''}</td><td>${r.hitter||''}</td>
           <td>${r.zone||''}</td><td>${r.action||''}</td><td>${r.pitchType||''}</td>
           <td>${r.velo??''}</td><td>${r.spin??''}</td>
           <td>
-            <div class="cell-actions">
-            <button class="icon-btn edit-btn" title="Edit row"><svg width="18" height="18"><use href="#ico-edit"/></svg></button>
-            <button class="icon-btn del-btn" title="Delete pitch"><svg width="18" height="18"><use href="#ico-x"/></svg></button>
-          </div>
-        </td>
-      `;
-          pitchTableBody.appendChild(tr);
+          <div class="cell-actions">
+          <button class="icon-btn edit-btn" title="Edit row"><svg width="18" height="18"><use href="#ico-edit"/></svg></button>
+          <button class="icon-btn del-btn" title="Delete pitch"><svg width="18" height="18"><use href="#ico-x"/></svg></button>
+        </div>
+      </td>
+    `;
+    pitchTableBody.appendChild(tr);
+  }
 
-          shown++;
-        }
+  // Update counter
+  countHint.textContent = `${total} ${total===1?'pitch':'pitches'}`;
 
-        // update counter
-        countHint.textContent = `${total} ${total===1?'pitch':'pitches'}`;
-
-        // show/hide the toggle button
-        if (total > RECENT_LIMIT) {
-          togglePitchListBtn.style.display = 'inline-block';
-          togglePitchListBtn.textContent = showAllPitches ? 'Show less ▴' : `Show all (${total}) ▾`;
-        } else {
-          togglePitchListBtn.style.display = 'none';
-        }
-      }
+  // Toggle button visibility + label
+  if (total > RECENT_LIMIT) {
+    togglePitchListBtn.style.display = 'inline-block';
+    togglePitchListBtn.textContent = showAllPitches ? 'Show less ▴' : `Show all (${total}) ▾`;
+  } else {
+    togglePitchListBtn.style.display = 'none';
+  }
+}
 
       function ensureReviewBar(){
         if (document.getElementById('reviewBar')) return;
