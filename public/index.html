@@ -272,25 +272,32 @@ html, body { -webkit-text-size-adjust: 100%; }
 
       <!-- New Event -->
       <section id="scout-new" class="card hidden">
-        <h2>Create Player</h2>
-        <div class="grid cols-2">
-          <div>
-            <label>Last, First</label>
-            <input id="playerName" type="text" placeholder="Doe, Jane" autocomplete="off" />
-          </div>
-          <div>
-            <label>Role</label>
-            <div class="seg sm" id="roleSeg">
-              <button type="button" data-role="batter" class="active">Batter</button>
-              <button type="button" data-role="dual">Dual</button>
-              <button type="button" data-role="pitcher">Pitcher</button>
+        <button id="createToggle" class="roster-toggle" aria-expanded="false">
+          Create Player <span class="chev">▾</span>
+        </button>
+
+        <div id="createPanel" class="roster-toggle" aria-expanded="false">
+          <div class="grid cols-2">
+            <div>
+              <label>Last, First</label>
+              <input id="playerName" type="text" placeholder="Doe, Jane" autocomplete="off" />
+            </div>
+            <div>
+              <label>Role</label>
+              <div class="seg sm" id="roleSeg">
+                <button type="button" data-role="batter" class="active">Batter</button>
+                <button type="button" data-role="dual">Dual</button>
+                <button type="button" data-role="pitcher">Pitcher</button>
+              </div>
             </div>
           </div>
+
+          <div class="row" style="margin-top: 8px">
+            <button class="ghost" id="addPlayerBtn">Add Player</button>
+            <span class="hint">Names in dropdowns are sorted A→Z by “Last, First”.</span>
+          </div>
         </div>
-        <div class="row" style="margin-top:8px">
-          <button class="ghost" id="addPlayerBtn">Add Player</button>
-          <span class="hint">Names in dropdowns are sorted A→Z by “Last, First”.</span>
-        </div>
+              
 
         <div style="height:8px"></div>
         <h2>Select Participants</h2>
@@ -770,6 +777,24 @@ const rosterPanel   = document.getElementById('rosterPanel');
 const rosterList    = document.getElementById('rosterList');
 const rosterAddBtn  = document.getElementById('rosterAddBtn');
 const rosterDoneBtn = document.getElementById('rosterDoneBtn');
+
+      const createToggle = document.getElementById('createToggle');
+      const createPanel = document.getElementById('createPanel');
+
+      function setCreateOpen(open){
+        if (!createPanel || !createToggle) return;
+        createPanel.classList.toggle('hidden', !open);
+        createPanel.setAttribute('aria-hidden', open ? 'false' : 'true');
+        createToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        createToggle.innerHTML = open
+          ? 'Create Player <span class="chev">▴</span>'
+          : 'Create Player <span class="chev">▾</span>';
+      }
+
+      createToggle?.addEventListener('click', ()=>{
+        const open = createPanel.classList.contains('hidden');
+        setCreateOpen(open);
+      });
 
 function setRosterOpen(open){
   if (!rosterPanel || !rosterToggle) return;
