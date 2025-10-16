@@ -212,6 +212,15 @@ html, body { -webkit-text-size-adjust: 100%; }
 /* Make absolutely sure text fields in New Event are 16px (no auto-zoom on focus) */
 #scout-new input[type="text"],
 #scout-new select { font-size: 16px; }
+
+/* Backup: force all interactive elements to prevent zoom */
+#scout-new input,
+#scout-new select,
+#scout-new textarea,
+#scout-new button {
+  font-size: 16px !important;
+  touch-action: manipulation;
+}
 </style>
 </head>
 <body>
@@ -570,16 +579,21 @@ const VP_LOCKED = "width=device-width, initial-scale=1, maximum-scale=1, user-sc
 function setViewportLock(lock){
   const tag = document.getElementById('vp');
   if (!tag) return;
-  // Only change if needed (prevents layout thrash)
   const want = lock ? VP_LOCKED : VP_BASE;
-  if (tag.getAttribute('content') !== want) tag.setAttribute('content', want);
+  if (tag.getAttribute('content') !== want) {
+    tag.setAttribute('content', want);
+    tag.parentNode.removeChild(tag);
+    document.head.appendChild(tag); 
+  }
 }
 
 function forcePhoneScaleOne(){
-  // Toggle to locked and back to normalize any lingering zoom
   setViewportLock(true);
   // microtask -> give Safari a beat, then keep it locked on "New Event"
-  requestAnimationFrame(()=>{ setViewportLock(true); });
+  requestAnimationFrame(()=>{
+    setViewportLock(true);
+    setTiemout(() => setViewportLock(true), 50);
+  });
 }
 
 // Small utility you already referenced; keep it if you have it, otherwise add:
@@ -715,6 +729,22 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
     const RECENT_LIMIT = 5;
     function initLoggerOnce(){
       if(loggerBooted) return; loggerBooted=true;
+
+        const newEventSection = document.getElementById('scout-new');
+      if (newEventSection) {
+        newEventSection.addEventListener('focusin', (e) => {
+          if (e.target.matches('input, select, textarea')) {
+            forcePhoneScaleOne();
+          }
+        }, true);
+
+        newEventSection.addEventListener('focusout', (e) => {
+          if (e.target.matches('input, select, textarea')) {
+            setTimeout(forcePhoneScaleOne, 100);
+          }
+        }, true);
+      }
+  
       const user=getUser();
       const K_PLAYERS=keyPlayers(user), K_PITCHES=keyPitches(user), K_EVENTS=keyEvents(user);
 
@@ -1570,6 +1600,14 @@ function renderEventsTable(){
 
     // ---------- Boot ----------
     document.getElementById('topbar').textContent='';
+    window.addEventListener('load', () => {
+      const activeTab = document.querySelector('.tab.active');
+      if (activeTab && activeTab.dataset.tab === 'new') {
+        setViewportLock(true);
+        setTimeout(forcePhoneScaleOne, 100);
+      }
+    });
+    
     routeByRole();
   })();
   </script>
