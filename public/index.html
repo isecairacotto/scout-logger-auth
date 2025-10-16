@@ -721,7 +721,6 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
         const n=clamp(parseInt(v)||0, VELO_MIN, VELO_MAX);
         veloTouched=true; veloBox.value=String(n);
         blurActive();
-        forcePhoneScaleOne();
       }
       
       function commitSpinBox(){
@@ -730,7 +729,6 @@ function blurActive(){ try{ document.activeElement?.blur(); }catch{} }
         const n=clamp(parseInt(v)||0, SPIN_MIN, SPIN_MAX);
         spinTouched=true; spinBox.value=String(n);
         blurActive();
-        forcePhoneScaleOne();
       }
       
       veloBox.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitVeloBox(); veloBox.blur(); }});
