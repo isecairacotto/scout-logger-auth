@@ -592,7 +592,7 @@ function forcePhoneScaleOne(){
   // microtask -> give Safari a beat, then keep it locked on "New Event"
   requestAnimationFrame(()=>{
     setViewportLock(true);
-    setTiemout(() => setViewportLock(true), 50);
+    setTimeout(() => setViewportLock(true), 50);
   });
 }
 
