@@ -34,13 +34,13 @@
   .logo img{height:28px;width:auto;display:block}
   main{padding:14px;max-width:100%;margin:0 auto}
   .grid{display:grid;gap:12px}
-  @media(min-width:760px){ .grid.cols-2{grid-template-columns:1fr 1fr} }
+  .grid.cols-2{grid-template-columns:1fr 1fr}
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:0 1px 1px rgba(0,0,0,.03)}
   .card h2{font-size:14px;color:var(--navy);margin:0 0 10px 0;text-transform:uppercase;letter-spacing:.08em}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
   input[type="text"],input[type="password"],select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:16px}
-  .badge-input{padding:18px !important;border:2px solid var(--border) !important;border-radius:12px !important;font-size:18px !important;font-weight:600 !important}
+  .badge-input{padding:22px 18px !important;border:2px solid var(--border) !important;border-radius:12px !important;font-size:18px !important;font-weight:600 !important;min-height:68px !important}
   .seg{display:flex;gap:8px;flex-wrap:wrap}
   .seg button{flex:1 1 auto;min-width:84px;padding:16px 14px;border:2px solid var(--border);border-radius:12px;background:#fff;font-weight:700;font-size:17px;transition:all 0.2s ease}
   .seg button.active{border-color:var(--navy);color:#fff;background:var(--navy)}
@@ -75,7 +75,7 @@
   /* Mobile grid for segmented controls */
   .seg.seg-grid { display: grid; gap: 8px; }
   .seg.seg-grid.seg-zone   { grid-template-columns: 1fr 1fr; }
-  .seg.seg-grid.seg-action { grid-template-columns: repeat(3, 1fr); }
+  .seg.seg-grid.seg-action { grid-template-columns: repeat(2, 1fr); }
   .seg.seg-grid.seg-type   { grid-template-columns: repeat(3, 1fr); }
 
   .seg.seg-grid button {
@@ -166,6 +166,7 @@
     .grid{ gap:10px }
     .card h2{ margin:6px 0 8px 0; font-size:13px }
     label{ margin-bottom:4px }
+    .grid.cols-2{ grid-template-columns:1fr 1fr }
     .grid.cols-2 > div{ min-width:0 }
     #scout-new .seg.seg-grid button{ padding:18px 12px !important; min-height:64px !important; font-size:17px !important }
     #scout-new .logged-wrap{ max-height:45vh }
