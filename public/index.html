@@ -90,7 +90,7 @@
 
   .seg button.active{ box-shadow:0 0 0 2px rgba(19,41,75,.08) inset }
   .seg button:focus-visible{ outline:3px solid #cfe4ff; outline-offset:2px }
-  #scout-new label{ margin-top: 2px }
+  #scout-new label{ margin-top: 4px; font-size:16px; font-weight:700 }
 
   #scout-new .seg.seg-grid {
     display: grid !important;
@@ -151,10 +151,9 @@
     padding:16px; font-size:16px; font-weight:800; border-radius:12px;
   }
   #scout-new #pitchActionBlock .secondary{
-    width:60%; justify-self:center;
-    padding:14px; font-size:16px; font-weight:700; border-radius:12px;
+    width:auto; justify-self:end; max-width:150px;
+    padding:10px 14px; font-size:14px; font-weight:700; border-radius:10px;
   }
-
   tr.highlighted{background:#fff9e6;border-left:4px solid #ffc107}
   .highlight-btn{background:#fff9e6 !important;border-color:#ffc107 !important;color:#856404;font-weight:600}
   .highlight-btn.active{background:#ffc107 !important;color:#fff !important}
@@ -164,8 +163,8 @@
     main{ padding:10px }
     .card{ padding:12px }
     .grid{ gap:10px }
-    .card h2{ margin:6px 0 8px 0; font-size:13px }
-    label{ margin-bottom:4px }
+    .card h2{ margin:8px 0 10px 0; font-size:18px; font-weight:800 }
+    label{ margin-bottom:6px; font-size:15px; font-weight:700 }
     .grid.cols-2{ grid-template-columns:1fr 1fr }
     .grid.cols-2 > div{ min-width:0 }
     #scout-new .seg.seg-grid button{ padding:18px 12px !important; min-height:64px !important; font-size:17px !important }
@@ -338,13 +337,13 @@
         </div>
         <div class="logged-wrap" style="margin-top:8px">
           <table id="pitchTable">
-            <thead>
-              <tr>
-                <th>Time</th><th>Pitcher</th><th>Hitter</th><th>Zone</th><th>Action</th><th>Pitch Type</th><th>Velo</th><th>Spin</th><th>Edit</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+          <thead>
+            <tr>
+              <th style="width:40px">★</th><th>Time</th><th>Pitcher</th><th>Hitter</th><th>Zone</th><th>Action</th><th>Pitch Type</th><th>Velo</th><th>Spin</th><th>Edit</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
           <div class="row" style="margin-top:10px">
             <div class="right"><button class="ghost" id="submitEventOpenBtn">Submit Event</button></div>
           </div>
@@ -867,12 +866,14 @@ rosterList?.addEventListener('click', (e)=>{
           tr.dataset.index = idx; // keep original index for edit/delete
 
           tr.innerHTML = `
+          <td style="text-align:center">
+            <button class="icon-btn highlight-btn" title="Highlight pitch" data-action="highlight"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+          </td>
           <td>${r.time||''}</td><td>${r.pitcher||''}</td><td>${r.hitter||''}</td>
           <td>${r.zone||''}</td><td>${r.action||''}</td><td>${r.pitchType||''}</td>
           <td>${r.velo??''}</td><td>${r.spin??''}</td>
           <td>
           <div class="cell-actions">
-          <button class="icon-btn highlight-btn" title="Highlight pitch" data-action="highlight"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
           <button class="icon-btn edit-btn" title="Edit row"><svg width="18" height="18"><use href="#ico-edit"/></svg></button>
           <button class="icon-btn del-btn" title="Delete pitch"><svg width="18" height="18"><use href="#ico-x"/></svg></button>
         </div>
