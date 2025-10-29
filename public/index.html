@@ -1021,11 +1021,11 @@ rosterList?.addEventListener('click', (e)=>{
       function makePlayerSelect(list,current){ const sel=document.createElement('select'); sel.className='cell-select'; const set=new Set(list); if(current && !set.has(current)) list=[current,...list]; const empty=document.createElement('option'); empty.value=''; empty.textContent=''; sel.appendChild(empty); list.forEach(name=>{ const op=document.createElement('option'); op.value=name; op.textContent=name; if(name===current) op.selected=true; sel.appendChild(op); }); return sel; }
 
       pitchTableBody.addEventListener('click',(e)=>{
-        const highLightBtn=e.target.closest('.highlight-btn');
+        const highlightBtn=e.target.closest('.highlight-btn');
         if(highlightBtn){
-          const tr=e.target,closest('tr');
+          const tr=e.target.closest('tr');
           tr.classList.toggle('highlighted');
-          highlightBtn.classList.toggle('activate');
+          highlightBtn.classList.toggle('active');
           return;
         }
         
