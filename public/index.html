@@ -36,14 +36,15 @@
   .grid{display:grid;gap:12px}
   .grid.cols-2{grid-template-columns:1fr 1fr}
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:0 1px 1px rgba(0,0,0,.03)}
-  .card h2{font-size:14px;color:var(--navy);margin:0 0 10px 0;text-transform:uppercase;letter-spacing:.08em}
+  .card h2{font-size:20px;color:var(--navy);margin:0 0 12px 0;text-transform:uppercase;letter-spacing:.1em;font-weight:800}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+  label{font-size:16px;color:var(--muted);display:block;margin-bottom:8px;font-weight:700}
   input[type="text"],input[type="password"],select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:16px}
-  .badge-input{padding:22px 18px !important;border:2px solid var(--border) !important;border-radius:12px !important;font-size:18px !important;font-weight:600 !important;min-height:68px !important}
+  .badge-input{padding:18px !important;border:2px solid var(--border) !important;border-radius:12px !important;font-size:18px !important;font-weight:600 !important}
   .seg{display:flex;gap:8px;flex-wrap:wrap}
   .seg button{flex:1 1 auto;min-width:84px;padding:16px 14px;border:2px solid var(--border);border-radius:12px;background:#fff;font-weight:700;font-size:17px;transition:all 0.2s ease}
-  .seg button.active{border-color:var(--navy);color:#fff;background:var(--navy)}
+  .seg button:hover{background:#f9f9f9;border-color:#b0b0c0}
+  .seg button.active:hover{background:var(--navy);border-color:var(--navy)}
   .seg.sm button{min-width:70px;padding:9px 10px;font-size:16px}
   .primary{background:var(--red);color:#fff;border:none;border-radius:12px;padding:14px 16px;font-size:16px;font-weight:800;cursor:pointer}
   .secondary{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:16px;font-weight:700;cursor:pointer}
@@ -85,9 +86,6 @@
     font-size: 17px;
   }
 
-  .seg button:hover{background:#f9f9f9;border-color:#b0b0c0}
-  .seg button.active:hover{background:var(--navy);border-color:var(--navy)}
-
   .seg button.active{ box-shadow:0 0 0 2px rgba(19,41,75,.08) inset }
   .seg button:focus-visible{ outline:3px solid #cfe4ff; outline-offset:2px }
   #scout-new label{ margin-top: 4px; font-size:16px; font-weight:700 }
@@ -99,7 +97,7 @@
   }
 
   #scout-new #zoneSeg.seg-grid      { grid-template-columns: 1fr 1fr !important; }
-  #scout-new #actionSeg.seg-grid    { grid-template-columns: repeat(3, minmax(0,1fr)) !important; }
+  #scout-new #actionSeg.seg-grid    { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
   #scout-new #pitchTypeSeg.seg-grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; }
 
   #scout-new .seg.seg-grid button{
@@ -154,9 +152,98 @@
     width:auto; justify-self:end; max-width:150px;
     padding:10px 14px; font-size:14px; font-weight:700; border-radius:10px;
   }
+
   tr.highlighted{background:#fff9e6;border-left:4px solid #ffc107}
   .highlight-btn{background:#fff9e6 !important;border-color:#ffc107 !important;color:#856404;font-weight:600}
   .highlight-btn.active{background:#ffc107 !important;color:#fff !important}
+
+  /* Submit Event Banner */
+  .submit-banner{
+    background:#fff9e6;
+    border:2px solid #ffc107;
+    border-radius:12px;
+    padding:12px 16px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:12px 14px;
+    box-shadow:0 2px 6px rgba(255,193,7,.2);
+    transition:all 0.3s ease;
+  }
+  .submit-banner:hover{
+    box-shadow:0 4px 12px rgba(255,193,7,.3);
+  }
+  .banner-info{
+    font-size:15px;
+    color:#856404;
+    font-weight:700;
+  }
+  .banner-btn{
+    background:var(--red);
+    color:#fff;
+    border:none;
+    padding:10px 18px;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:800;
+    cursor:pointer;
+    margin-left:auto;
+    transition:all 0.2s ease;
+  }
+  .banner-btn:hover{
+    background:#b81e27;
+    transform:translateY(-1px);
+    box-shadow:0 2px 8px rgba(210,38,48,.3);
+  }
+
+  /* Event Details Collapsible */
+  .event-details-wrapper{
+    margin:0 14px 12px 14px;
+  }
+  .event-toggle{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:12px;
+    padding:10px 12px;
+    font-weight:800;
+    font-size:16px;
+    cursor:pointer;
+    color:var(--navy);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  .event-toggle:hover{
+    background:#f9f9f9;
+  }
+  .chev{
+    font-size:18px;
+    transition:transform 0.3s ease;
+  }
+  .event-toggle[aria-expanded="true"] .chev{
+    transform:rotate(180deg);
+  }
+  .event-panel{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-top:none;
+    border-radius:0 0 12px 12px;
+    padding:14px;
+    box-shadow:0 1px 3px rgba(0,0,0,.05);
+    max-height:2000px;
+    overflow:hidden;
+    opacity:1;
+    transition:max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease;
+  }
+  .event-panel.collapsed{
+    max-height:0;
+    opacity:0;
+    padding:0 14px;
+    border:none;
+  }
 
   /* Mobile responsive */
   @media (max-width: 420px){
@@ -206,6 +293,49 @@
         </div>
       </div>
 
+      <!-- Submit Event Banner - Always Visible on New Event Tab -->
+      <div class="submit-banner hidden" id="submitEventBanner">
+        <div class="banner-info">✓ <span id="bannerPitchCount">0</span> <span id="bannerPitchLabel">pitches</span> logged</div>
+        <button class="banner-btn" id="bannerSubmitEventBtn">Submit Event →</button>
+      </div>
+
+      <!-- Event Details Section - Collapsible -->
+      <div class="event-details-wrapper hidden" id="eventDetailsWrapper">
+        <button class="event-toggle" id="eventDetailsToggle" aria-expanded="true">
+          Event Details <span class="chev">▾</span>
+        </button>
+        
+        <div class="event-panel" id="eventDetailsPanel">
+          <div class="grid cols-2">
+            <div><label>Date (MM/DD/YYYY)</label><input id="eventDate" type="text" readonly /></div>
+            <div><label>Scout Name</label><input id="scoutName" type="text" placeholder="Type your name" /></div>
+            <div><label>Event Name</label><input id="eventName" type="text" placeholder="e.g., Perfect Game 17U" /></div>
+            <div><label>Location</label><input id="eventLocation" type="text" placeholder="City, ST / Complex" /></div>
+          </div>
+
+          <div style="height:10px"></div>
+          <div>
+            <div class="row"><label>DSP?</label><button type="button" id="dspToggle" class="toggle" aria-pressed="false">No</button></div>
+            <div id="dspChecklist" class="checklist">
+              <label><input type="checkbox" id="ckBlast"> Blast</label>
+              <div class="team-input" id="blastTeamWrap" style="display:none;">
+                <label>Which team(s) (Blast)</label>
+                <div id="blastTeams" class="team-grid"></div>
+              </div>
+              <label><input type="checkbox" id="ckTrackman"> Trackman</label>
+              <div class="team-input" id="trackmanTeamWrap" style="display:none;">
+                <label>Which team(s) (Trackman)</label>
+                <div id="trackmanTeams" class="team-grid"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+          <button class="primary" id="saveEventDetailsBtn">Save Event Details</button>
+          <div id="eventMsg" style="margin-top:10px"></div>
+        </div>
+      </div>
+
       <!-- History -->
       <section id="scout-history" class="card">
         <h2>History</h2>
@@ -252,7 +382,7 @@
 
           <div class="row" style="margin-top: 8px">
             <button class="ghost" id="addPlayerBtn">Add Player</button>
-            <span class="hint">Names in dropdowns are sorted A→Z by “Last, First”.</span>
+            <span class="hint">Names in dropdowns are sorted A→Z by "Last, First".</span>
           </div>
         </div>
               
@@ -271,7 +401,7 @@
 
         <div id="rosterPanel" class="roster-panel hidden" aria-hidden="true">
           <div class="row">
-            <div class="hint">Edit or remove players you’ve added. Changes update the dropdowns.</div>
+            <div class="hint">Edit or remove players you've added. Changes update the dropdowns.</div>
             <div class="right"></div>
             <button type="button" id="rosterAddBtn" class="secondary">Add Player</button>
             <button type="button" id="rosterDoneBtn" class="primary">Done</button>
@@ -309,13 +439,13 @@
 
         <div class="grid cols-2">
           <div>
-            <label>Velo (mph)</label>
+            <label>Velo (mph) — type, blank/NA=NA</label>
             <div class="slider-wrap">
               <input id="veloBox" type="text" class="badge-input" placeholder="" inputmode="numeric" aria-label="Velocity value" />
             </div>
           </div>
           <div>
-            <label>Spin (rpm)</label>
+            <label>Spin (rpm) — type, blank/NA=NA</label>
             <div class="slider-wrap">
               <input id="spinBox" type="text" class="badge-input" placeholder="" inputmode="numeric" aria-label="Spin rate value" />
             </div>
@@ -337,49 +467,14 @@
         </div>
         <div class="logged-wrap" style="margin-top:8px">
           <table id="pitchTable">
-          <thead>
-            <tr>
-              <th style="width:40px">★</th><th>Time</th><th>Pitcher</th><th>Hitter</th><th>Zone</th><th>Action</th><th>Pitch Type</th><th>Velo</th><th>Spin</th><th>Edit</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-          <div class="row" style="margin-top:10px">
-            <div class="right"><button class="ghost" id="submitEventOpenBtn">Submit Event</button></div>
-          </div>
+            <thead>
+              <tr>
+                <th style="width:40px">★</th><th>Time</th><th>Pitcher</th><th>Hitter</th><th>Zone</th><th>Action</th><th>Pitch Type</th><th>Velo</th><th>Spin</th><th>Edit</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
-
-        <!-- Submit Event Panel -->
-        <section id="eventSection" class="card" style="margin-top:10px">
-          <h2>Submit Event</h2>
-          <div class="grid cols-2">
-            <div><label>Date (MM/DD/YYYY)</label><input id="eventDate" type="text" readonly /></div>
-            <div><label>Scout Name</label><input id="scoutName" type="text" placeholder="Type your name" /></div>
-            <div><label>Event Name</label><input id="eventName" type="text" placeholder="e.g., Perfect Game 17U" /></div>
-            <div><label>Location</label><input id="eventLocation" type="text" placeholder="City, ST / Complex" /></div>
-          </div>
-
-          <div style="height:10px"></div>
-          <div>
-            <div class="row"><label>DSP?</label><button type="button" id="dspToggle" class="toggle" aria-pressed="false">No</button></div>
-            <div id="dspChecklist" class="checklist">
-              <label><input type="checkbox" id="ckBlast"> Blast</label>
-              <div class="team-input" id="blastTeamWrap" style="display:none;">
-                <label>Which team(s) (Blast)</label>
-                <div id="blastTeams" class="team-grid"></div>
-              </div>
-              <label><input type="checkbox" id="ckTrackman"> Trackman</label>
-              <div class="team-input" id="trackmanTeamWrap" style="display:none;">
-                <label>Which team(s) (Trackman)</label>
-                <div id="trackmanTeams" class="team-grid"></div>
-              </div>
-            </div>
-          </div>
-
-          <div style="height:12px"></div>
-          <div class="actions-row"><div class="right"></div><button class="primary" id="finalSubmitBtn">Submit Event</button></div>
-          <div id="eventMsg" style="margin-top:10px"></div>
-        </section>
       </section>
     </section>
 
@@ -496,9 +591,8 @@
     const veloBox=document.getElementById('veloBox');
     const spinBox=document.getElementById('spinBox');
     const submitPitchBtn=document.getElementById('submitPitchBtn'), missPitchBtn=document.getElementById('missPitchBtn'), pitchTableBody=document.querySelector('#pitchTable tbody'), countHint=document.getElementById('countHint');
-    const submitEventOpenBtn=document.getElementById('submitEventOpenBtn'), eventSection=document.getElementById('eventSection');
     const eventDate=document.getElementById('eventDate'), scoutName=document.getElementById('scoutName'), eventName=document.getElementById('eventName'), eventLocation=document.getElementById('eventLocation');
-    const dspToggle=document.getElementById('dspToggle'), dspChecklist=document.getElementById('dspChecklist'), finalSubmitBtn=document.getElementById('finalSubmitBtn'), eventMsg=document.getElementById('eventMsg');
+    const dspToggle=document.getElementById('dspToggle'), dspChecklist=document.getElementById('dspChecklist'), eventMsg=document.getElementById('eventMsg');
     const ckBlast=document.getElementById('ckBlast'), ckTrackman=document.getElementById('ckTrackman');
     const blastTeamWrap=document.getElementById('blastTeamWrap'), trackmanTeamWrap=document.getElementById('trackmanTeamWrap');
     const blastTeams=document.getElementById('blastTeams'), trackmanTeams=document.getElementById('trackmanTeams');
@@ -628,13 +722,24 @@ window.adminEventsTableBody = adminEventsTableBody;
       panelHistory.classList.toggle('hidden', tab!=='history');
       panelNew.classList.toggle('hidden', tab!=='new');
       
+      const submitEventBanner=document.getElementById('submitEventBanner');
+      const eventDetailsWrapper=document.getElementById('eventDetailsWrapper');
+      
       if(tab==='new') {
         setViewportLock(true);
         initLoggerOnce();
-        requestAnimationFrame(forcePhoneScaleOne); 
+        requestAnimationFrame(forcePhoneScaleOne);
+        
+        // Show banner and event details on New Event tab
+        if(submitEventBanner) submitEventBanner.classList.remove('hidden');
+        if(eventDetailsWrapper) eventDetailsWrapper.classList.remove('hidden');
       } else {
         setViewportLock(false);
         renderEventsTable();
+        
+        // Hide banner and event details on History tab
+        if(submitEventBanner) submitEventBanner.classList.add('hidden');
+        if(eventDetailsWrapper) eventDetailsWrapper.classList.add('hidden');
       }
     });
 
@@ -790,7 +895,7 @@ rosterToggle?.addEventListener('click', ()=>{
 });
 rosterDoneBtn?.addEventListener('click', ()=> setRosterOpen(false));
 
-// Reuse your “Create Player” UI for Add
+// Reuse your "Create Player" UI for Add
 rosterAddBtn?.addEventListener('click', ()=>{
   document.getElementById('playerName')?.scrollIntoView({behavior:'smooth', block:'center'});
   setRosterOpen(false);
@@ -926,7 +1031,7 @@ rosterList?.addEventListener('click', (e)=>{
           if (typeof pitcherSelect !== 'undefined' && pitcherSelect) pitcherSelect.selectedIndex = 0;
           if (typeof batterSelect  !== 'undefined' && batterSelect)  batterSelect.selectedIndex  = 0;
 
-          //Reset “current pitch” widgets + table + counter
+          //Reset "current pitch" widgets + table + counter
           if (typeof resetPitchForm === 'function') resetPitchForm();
           if (typeof renderTable === 'function')    renderTable();
           if (typeof countHint !== 'undefined')     countHint.textContent = '0 pitches';
@@ -950,15 +1055,21 @@ rosterList?.addEventListener('click', (e)=>{
           Array.from(trackmanTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
           
           // hide review bar
-          document.getElementById('reviewBar')?.remove(); // ✅ replaces bar.remove()
+          document.getElementById('reviewBar')?.remove();
           // collapse the submit panel if it was open
-          eventSection.style.display='none';
+          const eventDetailsPanel = document.getElementById('eventDetailsPanel');
+          const eventDetailsToggle = document.getElementById('eventDetailsToggle');
+          if(eventDetailsPanel) eventDetailsPanel.classList.add('collapsed');
+          if(eventDetailsToggle) eventDetailsToggle.setAttribute('aria-expanded','false');
         });
         
         document.getElementById('btnResubmit').addEventListener('click', () => {
           // open the submit panel with current rows/roster visible
-          eventSection.style.display='block';
-          eventSection.scrollIntoView({ behavior:'smooth' });
+          const eventDetailsPanel = document.getElementById('eventDetailsPanel');
+          const eventDetailsToggle = document.getElementById('eventDetailsToggle');
+          if(eventDetailsPanel) eventDetailsPanel.classList.remove('collapsed');
+          if(eventDetailsToggle) eventDetailsToggle.setAttribute('aria-expanded','true');
+          eventDetailsPanel?.scrollIntoView({ behavior:'smooth' });
         });
       }
 
@@ -1007,7 +1118,7 @@ rosterList?.addEventListener('click', (e)=>{
         showAllPitches = false;   // collapse back after a new row
         renderTable();
 
-        missPitchBtn.textContent='Miss Logged ✓'; setTimeout(()=>missPitchBtn.textContent='Miss Pitch',500);
+        missPitchBtn.textContent='Miss Logged ✓'; setTimeout(()=>missPitchBtn.textContent='Missed Pitch',500);
         resetPitchForm();
       }
       submitPitchBtn.addEventListener('click', submitPitch);
@@ -1037,7 +1148,7 @@ rosterList?.addEventListener('click', (e)=>{
         if(del){ const tr=e.target.closest('tr'); const idx=Number(tr.dataset.index); if(confirm('Delete this pitch?')){ pitches.splice(idx,1); saveJSON(K_PITCHES,pitches); renderTable(); } return; }
         const btn=e.target.closest('.edit-btn'); if(!btn) return;
         const tr=e.target.closest('tr'); const idx=Number(tr.dataset.index); const r=pitches[idx]; if(tr.classList.contains('editing')) return; tr.classList.add('editing');
-        const tds=tr.querySelectorAll('td'); const tdPitcher=tds[1], tdHitter=tds[2], tdZone=tds[3], tdAction=tds[4], tdType=tds[5], tdVelo=tds[6], tdSpin=tds[7], tdEdit=tds[8];
+        const tds=tr.querySelectorAll('td'); const tdHighlight=tds[0], tdTime=tds[1], tdPitcher=tds[2], tdHitter=tds[3], tdZone=tds[4], tdAction=tds[5], tdType=tds[6], tdVelo=tds[7], tdSpin=tds[8], tdEdit=tds[9];
         const pitchers=players.filter(p=>p.role==='pitcher'||p.role==='dual').map(p=>p.name).sort((a,b)=>a.localeCompare(b));
         const batters=players.filter(p=>p.role==='batter'||p.role==='dual').map(p=>p.name).sort((a,b)=>a.localeCompare(b));
         const selZone=makeSelect(ZONES,r.zone||''); const selAction=makeSelect(ACTIONS,r.action||''); const selType=makeSelect(PITCH_TYPES,r.pitchType||''); const selPitcher=makePlayerSelect(pitchers,r.pitcher||''); const selHitter=makePlayerSelect(batters,r.hitter||''); const inVelo=makeInput(r.velo); const inSpin=makeInput(r.spin);
@@ -1071,16 +1182,6 @@ rosterList?.addEventListener('click', (e)=>{
       populateTeamChecks(blastTeams);
       populateTeamChecks(trackmanTeams);
 
-      submitEventOpenBtn.addEventListener('click', ()=>{
-        eventSection.style.display='block';
-        eventDate.value=todayMDY();
-        eventMsg.innerHTML='';
-        dspToggle.classList.remove('active'); dspToggle.textContent='No'; dspToggle.setAttribute('aria-pressed','false');
-        dspChecklist.classList.remove('show');
-        ckBlast.checked=false; blastTeamWrap.style.display='none';
-        ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
-        eventSection.scrollIntoView({behavior:'smooth'});
-      });
       dspToggle.addEventListener('click', ()=>{
         const active=dspToggle.classList.toggle('active');
         dspToggle.textContent=active?'Yes':'No';
@@ -1103,96 +1204,141 @@ rosterList?.addEventListener('click', (e)=>{
         }));
       }
 
-      finalSubmitBtn.addEventListener('click', ()=>{
-        const s=loadSession()||{};
-        const user=s.username||'guest';
-        const K_EVENTS=keyEvents(user);
-        const K_PITCHES=keyPitches(user);
-        const K_PLAYERS=keyPlayers(user);
+      // Event Details Toggle
+      const eventDetailsToggle=document.getElementById('eventDetailsToggle');
+      const eventDetailsPanel=document.getElementById('eventDetailsPanel');
+      const saveEventDetailsBtn=document.getElementById('saveEventDetailsBtn');
+      const bannerSubmitEventBtn=document.getElementById('bannerSubmitEventBtn');
+      const bannerPitchCount=document.getElementById('bannerPitchCount');
+      const bannerPitchLabel=document.getElementById('bannerPitchLabel');
+      
+      if(eventDetailsToggle && eventDetailsPanel){
+        eventDetailsToggle.addEventListener('click',()=>{
+          const isExpanded=eventDetailsToggle.getAttribute('aria-expanded')==='true';
+          eventDetailsToggle.setAttribute('aria-expanded',!isExpanded);
+          eventDetailsPanel.classList.toggle('collapsed');
+        });
+      }
+      
+      // Save Event Details - just collapses
+      if(saveEventDetailsBtn){
+        saveEventDetailsBtn.addEventListener('click',()=>{
+          if(eventDetailsToggle) eventDetailsToggle.setAttribute('aria-expanded','false');
+          if(eventDetailsPanel) eventDetailsPanel.classList.add('collapsed');
+          saveEventDetailsBtn.textContent='Saved ✓';
+          setTimeout(()=>saveEventDetailsBtn.textContent='Save Event Details',1000);
+        });
+      }
+      
+      // Update banner pitch count whenever table renders
+      function updateBannerCount(){
+        if(bannerPitchCount) bannerPitchCount.textContent=pitches.length;
+        if(bannerPitchLabel) bannerPitchLabel.textContent=pitches.length===1?'pitch':'pitches';
+      }
+      
+      // Override renderTable to update banner
+      const originalRenderTable=renderTable;
+      renderTable=function(){
+        originalRenderTable();
+        updateBannerCount();
+      };
+      
+      // Banner Submit Event button - saves and clears everything
+      if(bannerSubmitEventBtn){
+        bannerSubmitEventBtn.addEventListener('click',()=>{
+          const s=loadSession()||{};
+          const user=s.username||'guest';
+          const K_EVENTS=keyEvents(user);
+          const K_PITCHES=keyPitches(user);
+          const K_PLAYERS=keyPlayers(user);
 
-        const name=(eventName.value||'').trim()||'Untitled';
-        const date=(eventDate.value||todayMDY()).trim();
-        const location=(eventLocation.value||'').trim();
-        const scout=(scoutName.value||s.fullName||user).trim();
+          const name=(eventName.value||'').trim()||'Untitled';
+          const date=(eventDate.value||todayMDY()).trim();
+          const location=(eventLocation.value||'').trim();
+          const scout=(scoutName.value||s.fullName||user).trim();
 
-        const rows=loadJSON(K_PITCHES, []);
-        if(!rows.length){ eventMsg.innerHTML='<div class="success warn">No pitches to save.</div>'; return; }
+          const rows=loadJSON(K_PITCHES, []);
+          if(!rows.length){ alert('No pitches to submit.'); return; }
 
-        const dsp = dspToggle.classList.contains('active');
-        const blast = ckBlast.checked ? Array.from(blastTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
-        const trackman = ckTrackman.checked ? Array.from(trackmanTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
-        const currentPlayers = loadJSON(K_PLAYERS, []);
+          const dsp = dspToggle.classList.contains('active');
+          const blast = ckBlast.checked ? Array.from(blastTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
+          const trackman = ckTrackman.checked ? Array.from(trackmanTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
+          const currentPlayers = loadJSON(K_PLAYERS, []);
 
-        const evts=loadJSON(K_EVENTS, []);
-        const evt={
-          id:Date.now(), user, name, date, location, scout,
-          count:rows.length, rows:rows.slice(),
-          players: currentPlayers.slice(),
-          dsp, blast, trackman
-        };
-        evts.push(evt); saveJSON(K_EVENTS, evts);
+          const evts=loadJSON(K_EVENTS, []);
+          const evt={
+            id:Date.now(), user, name, date, location, scout,
+            count:rows.length, rows:rows.slice(),
+            players: currentPlayers.slice(),
+            dsp, blast, trackman
+          };
+          evts.push(evt); saveJSON(K_EVENTS, evts);
 
-        (async()=>{
-          try{
-            const sess=loadSession()||{};
-            if (sess.token && sess.token!=='local') {
-              const payload={ name,date,location,scout, rows, dsp,blast,trackman, players: currentPlayers };
-              console.log("DEBUG posting event payload", payload);
-              console.log("DEBUG using token", sess.token);
+          (async()=>{
+            try{
+              const sess=loadSession()||{};
+              if (sess.token && sess.token!=='local') {
+                const payload={ name,date,location,scout, rows, dsp,blast,trackman, players: currentPlayers };
+                console.log("DEBUG posting event payload", payload);
+                console.log("DEBUG using token", sess.token);
 
-              
-              const r=await fetch('/api/events', {
-                method:'POST',
-                headers:{'Content-Type':'application/json','Authorization':'Bearer '+sess.token},
-                body:JSON.stringify(payload)
-              });
+                
+                const r=await fetch('/api/events', {
+                  method:'POST',
+                  headers:{'Content-Type':'application/json','Authorization':'Bearer '+sess.token},
+                  body:JSON.stringify(payload)
+                });
 
-              console.log("DEBUG /api/events response status:", r.status);
-              
-              const ct=(r.headers.get('content-type')||'').toLowerCase();
-              if (r.status === 202 && ct.includes('application/json')) {
-                const j = await r.json();
-                if (j.queued) {
-                  eventMsg.innerHTML = '<div class="success">Saved locally - will sync when online.</div>';
-                }
-              } else if (!r.ok || !ct.includes('application/json')) {
-        // treat as offline; SW may still queue it
+                console.log("DEBUG /api/events response status:", r.status);
+                
+                const ct=(r.headers.get('content-type')||'').toLowerCase();
+                if (r.status === 202 && ct.includes('application/json')) {
+                  const j = await r.json();
+                  if (j.queued) {
+                    eventMsg.innerHTML = '<div class="success">Saved locally - will sync when online.</div>';
+                  }
+                } else if (!r.ok || !ct.includes('application/json')) {
+          // treat as offline; SW may still queue it
+          eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
+        }
+        // If r.ok 200/201 -> nothing extra to show
+      } else {
+        // offline now; SW queues it, we show the same hint
         eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
       }
-      // If r.ok 200/201 -> nothing extra to show
-    } else {
-      // offline now; SW queues it, we show the same hint
+    } catch {
+      // Network error; SW likely queued it already
       eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
     }
-  } catch {
-    // Network error; SW likely queued it already
-    eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
-  }
-})();
+  })();
 
-// Clear working sets (storage + in-memory) and UI
-saveJSON(K_PITCHES,[]); 
-saveJSON(K_PLAYERS,[]);
-pitches = [];               // << hard clear in-memory
-players = [];               // << hard clear in-memory
-showAllPitches = false;
-renderTable();              // reflect the clears immediately
+  // Clear working sets (storage + in-memory) and UI
+  saveJSON(K_PITCHES,[]); 
+  saveJSON(K_PLAYERS,[]);
+  pitches = [];
+  players = [];
+  showAllPitches = false;
+  renderTable();
 
-playerNameInput.value=''; eventName.value=''; eventLocation.value=''; scoutName.value='';
-ckBlast.checked=false; blastTeamWrap.style.display='none';
-ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
-dspToggle.classList.remove('active'); dspToggle.textContent='No'; dspChecklist.classList.remove('show');
+  playerNameInput.value=''; eventName.value=''; eventLocation.value=''; scoutName.value='';
+  ckBlast.checked=false; blastTeamWrap.style.display='none';
+  ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
+  dspToggle.classList.remove('active'); dspToggle.textContent='No'; dspChecklist.classList.remove('show');
 
-// if a review bar is showing, hide it
-const rb = document.getElementById('reviewBar');
-if (rb) rb.remove();
+  // if a review bar is showing, hide it
+  const rb = document.getElementById('reviewBar');
+  if (rb) rb.remove();
 
-eventMsg.innerHTML='<div class="success">Event submitted. Saved to History & cleared current log.</div>';
-refreshSelects(); 
-renderEventsTable();
-setTimeout(()=>{ eventSection.style.display='none'; }, 1200);
-      });
+  // Re-open Event Details for next event
+  if(eventDetailsToggle) eventDetailsToggle.setAttribute('aria-expanded','true');
+  if(eventDetailsPanel) eventDetailsPanel.classList.remove('collapsed');
 
+  eventMsg.innerHTML='<div class="success">Event submitted. Saved to History & cleared current log.</div>';
+  refreshSelects(); 
+  renderEventsTable();
+  setTimeout(()=>{ eventMsg.innerHTML=''; }, 2000);
+        });
+      }
 
       refreshSelects(); renderTable();
     } // initLoggerOnce
@@ -1346,7 +1492,7 @@ function renderEventsTable(){
       newPanel.classList.add('hidden');
     }
 
-    const KNOWN_USERS=["faffanis","malvarez","mberumen","fbreton","scabral","jcabrera","jcalderon","pciriaco","tclaus","jcruz","rcubillan","jdavis","jfitzpatrick","egomez","mgroopman","jhernandez","jkaregeannes","jkim","mlaureano","llin","wlobo","kmatsumoto","emedina","amejia","rmendoza","rmora","cmorillo","rmotooka","enanita","dneuman","cocando","rpino","eramirez","arequena","hrincones","mrodriguez","eromero","rsaggiadi","lsambo","gschilz","czamora","mcuellar","cschneider","isecairacotto"];
+    const KNOWN_USERS=["faffanis","malvarez","mberumen","fbreton","scabral","jcabrera","jcalderon","pciriaco","tclaus","jcruz","rcubillan","jdavis","jfitzpatrick","egomez","mgroopman","jhernandez","jkaregeannes","jkim","mlaureano","llin","wlobo","kmatsumoto","emedina","amejia","rmendoza","rmora","cmorillo","rmotooka","enanita","dneuman","docando","rpino","eramirez","arequena","hrincones","mrodriguez","eromero","rsaggiadi","lsambo","gschilz","czamora","mcuellar","cschneider","isecairacotto"];
     function initAdminUI(){
       if(adminScoutSelect.dataset.ready) return;
       
