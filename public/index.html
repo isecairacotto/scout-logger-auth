@@ -132,17 +132,10 @@
   #scout-new .logged-wrap{ overflow:auto; max-height:38vh; }
 
   #scout-new #pitchActionBlock{
-    position:-webkit-sticky;
-    position:sticky;
-    bottom:0;
-    z-index:5;
-    display:grid;
-    gap:8px;
-    margin-top:10px;
-    padding:10px 4px calc(6px + env(safe-area-inset-bottom));
-    background:linear-gradient(180deg, rgba(247,247,251,0), rgba(247,247,251,1) 35%);
-    background-clip:padding-box;
-  }
+  display:grid;
+  gap:8px;
+  margin-top:10px;
+}
   
   #scout-new #pitchActionBlock .primary{
     width:100%;
@@ -173,9 +166,6 @@
     font-weight:800;
     font-size:16px;
     cursor:pointer;
-    color:var(--navy);
-    text-transform:uppercase;
-    letter-spacing:.08em;
   }
   .event-toggle:hover{
     background:#f9f9f9;
@@ -256,7 +246,7 @@
 
       <!-- Submit Event Banner - Always Visible on New Event Tab -->
       <div style="margin:12px 14px" class="hidden" id="submitEventBanner">
-        <button class="primary" id="bannerSubmitEventBtn" style="width:100%;padding:16px;font-size:16px;font-weight:800">Submit Event →</button>
+        <button class="primary" id="bannerSubmitEventBtn">Submit Event →</button>
       </div>
 
       <!-- History -->
