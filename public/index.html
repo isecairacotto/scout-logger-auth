@@ -157,45 +157,6 @@
   .highlight-btn{background:#fff9e6 !important;border-color:#ffc107 !important;color:#856404;font-weight:600}
   .highlight-btn.active{background:#ffc107 !important;color:#fff !important}
 
-  /* Submit Event Banner */
-  .submit-banner{
-    background:#fff9e6;
-    border:2px solid #ffc107;
-    border-radius:12px;
-    padding:12px 16px;
-    display:flex;
-    align-items:center;
-    gap:12px;
-    margin:12px 14px;
-    box-shadow:0 2px 6px rgba(255,193,7,.2);
-    transition:all 0.3s ease;
-  }
-  .submit-banner:hover{
-    box-shadow:0 4px 12px rgba(255,193,7,.3);
-  }
-  .banner-info{
-    font-size:15px;
-    color:#856404;
-    font-weight:700;
-  }
-  .banner-btn{
-    background:var(--red);
-    color:#fff;
-    border:none;
-    padding:10px 18px;
-    border-radius:10px;
-    font-size:15px;
-    font-weight:800;
-    cursor:pointer;
-    margin-left:auto;
-    transition:all 0.2s ease;
-  }
-  .banner-btn:hover{
-    background:#b81e27;
-    transform:translateY(-1px);
-    box-shadow:0 2px 8px rgba(210,38,48,.3);
-  }
-
   /* Event Details Collapsible */
   .event-details-wrapper{
     margin:0 14px 12px 14px;
@@ -294,13 +255,36 @@
       </div>
 
       <!-- Submit Event Banner - Always Visible on New Event Tab -->
-      <div class="submit-banner hidden" id="submitEventBanner">
-        <div class="banner-info">✓ <span id="bannerPitchCount">0</span> <span id="bannerPitchLabel">pitches</span> logged</div>
-        <button class="banner-btn" id="bannerSubmitEventBtn">Submit Event →</button>
+      <div style="margin:12px 14px" class="hidden" id="submitEventBanner">
+        <button class="primary" id="bannerSubmitEventBtn" style="width:100%;padding:16px;font-size:16px;font-weight:800">Submit Event →</button>
       </div>
 
-      <!-- Event Details Section - Collapsible -->
-      <div class="event-details-wrapper hidden" id="eventDetailsWrapper">
+      <!-- History -->
+      <section id="scout-history" class="card">
+        <h2>History</h2>
+        <div class="row" style="margin-bottom:6px">
+          <span class="hint">Saved workouts (on this device).</span>
+          <div class="right">
+            <button class="ghost" id="exportAllCsvBtn">Download All CSV</button>
+          </div>
+        </div>
+
+        <table id="eventsTable">
+          <thead>
+            <tr>
+              <th>Date</th><th>Event</th><th>Location</th><th>Scout</th><th>Pitches</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6" class="hint">No events yet.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- New Event -->
+      <section id="scout-new" class="card hidden">
+        
+      <div class="event-details-wrapper" id="eventDetailsWrapper">
         <button class="event-toggle" id="eventDetailsToggle" aria-expanded="true">
           Event Details <span class="chev">▾</span>
         </button>
@@ -335,31 +319,7 @@
           <div id="eventMsg" style="margin-top:10px"></div>
         </div>
       </div>
-
-      <!-- History -->
-      <section id="scout-history" class="card">
-        <h2>History</h2>
-        <div class="row" style="margin-bottom:6px">
-          <span class="hint">Saved workouts (on this device).</span>
-          <div class="right">
-            <button class="ghost" id="exportAllCsvBtn">Download All CSV</button>
-          </div>
-        </div>
-
-        <table id="eventsTable">
-          <thead>
-            <tr>
-              <th>Date</th><th>Event</th><th>Location</th><th>Scout</th><th>Pitches</th><th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td colspan="6" class="hint">No events yet.</td></tr>
-          </tbody>
-        </table>
-      </section>
-
-      <!-- New Event -->
-      <section id="scout-new" class="card hidden">
+        
         <button id="createToggle" class="roster-toggle" aria-expanded="false">
           Create Player <span class="chev">▾</span>
         </button>
@@ -718,28 +678,25 @@ window.adminEventsTableBody = adminEventsTableBody;
       scoutTabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
       t.classList.add('active');
       const tab=t.dataset.tab;
-      
+  
       panelHistory.classList.toggle('hidden', tab!=='history');
       panelNew.classList.toggle('hidden', tab!=='new');
-      
+  
       const submitEventBanner=document.getElementById('submitEventBanner');
-      const eventDetailsWrapper=document.getElementById('eventDetailsWrapper');
-      
+  
       if(tab==='new') {
         setViewportLock(true);
         initLoggerOnce();
         requestAnimationFrame(forcePhoneScaleOne);
-        
-        // Show banner and event details on New Event tab
+    
+        // Show submit button on New Event tab
         if(submitEventBanner) submitEventBanner.classList.remove('hidden');
-        if(eventDetailsWrapper) eventDetailsWrapper.classList.remove('hidden');
       } else {
         setViewportLock(false);
         renderEventsTable();
-        
-        // Hide banner and event details on History tab
+    
+        // Hide submit button on History tab
         if(submitEventBanner) submitEventBanner.classList.add('hidden');
-        if(eventDetailsWrapper) eventDetailsWrapper.classList.add('hidden');
       }
     });
 
@@ -1209,8 +1166,6 @@ rosterList?.addEventListener('click', (e)=>{
       const eventDetailsPanel=document.getElementById('eventDetailsPanel');
       const saveEventDetailsBtn=document.getElementById('saveEventDetailsBtn');
       const bannerSubmitEventBtn=document.getElementById('bannerSubmitEventBtn');
-      const bannerPitchCount=document.getElementById('bannerPitchCount');
-      const bannerPitchLabel=document.getElementById('bannerPitchLabel');
       
       if(eventDetailsToggle && eventDetailsPanel){
         eventDetailsToggle.addEventListener('click',()=>{
@@ -1229,19 +1184,6 @@ rosterList?.addEventListener('click', (e)=>{
           setTimeout(()=>saveEventDetailsBtn.textContent='Save Event Details',1000);
         });
       }
-      
-      // Update banner pitch count whenever table renders
-      function updateBannerCount(){
-        if(bannerPitchCount) bannerPitchCount.textContent=pitches.length;
-        if(bannerPitchLabel) bannerPitchLabel.textContent=pitches.length===1?'pitch':'pitches';
-      }
-      
-      // Override renderTable to update banner
-      const originalRenderTable=renderTable;
-      renderTable=function(){
-        originalRenderTable();
-        updateBannerCount();
-      };
       
       // Banner Submit Event button - saves and clears everything
       if(bannerSubmitEventBtn){
