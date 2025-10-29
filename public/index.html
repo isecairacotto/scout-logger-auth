@@ -268,6 +268,11 @@
 
       <!-- New Event -->
       <section id="scout-new" class="card hidden">
+
+        <!-- Submit Event Banner - Always Visible on New Event Tab -->
+      <div style="margin:12px 0px;display:flex;justify-content:flex-end" class="hidden" id="submitEventBanner">
+        <button class="primary" id="bannerSubmitEventBtn">Submit Event →</button>
+      </div>
         
       <div class="event-details-wrapper" id="eventDetailsWrapper">
         <button class="event-toggle" id="eventDetailsToggle" aria-expanded="true">
@@ -303,11 +308,6 @@
           <button class="primary" id="saveEventDetailsBtn">Save Event Details</button>
           <div id="eventMsg" style="margin-top:10px"></div>
         </div>
-      </div>
-
-      <!-- Submit Event Banner - Always Visible on New Event Tab -->
-      <div style="margin:12px 0px;display:flex;justify-content:flex-end" class="hidden" id="submitEventBanner">
-        <button class="primary" id="bannerSubmitEventBtn">Submit Event →</button>
       </div>
         
         <button id="createToggle" class="roster-toggle" aria-expanded="false">
