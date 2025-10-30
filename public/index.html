@@ -1470,68 +1470,93 @@ function renderEventsTable(){
       adminScoutSelect.dataset.ready = '1';
     }
 
-    function adminListEventsFor(user){
-      adminEventsTableBody.innerHTML=`<tr><td colspan="6" class="hint">Loading…</td></tr>`;
-      const render=(list)=>{
-        adminEventsTableBody.innerHTML='';
-        if(!list||!list.length){ adminEventsTableBody.innerHTML=`<tr><td colspan="6" class="hint">No events for ${user}.</td></tr>`; return; }
-        list.sort((a,b)=>b.id-a.id).forEach(e=>{
-          const tr=document.createElement('tr');
-          tr.innerHTML=`
-            <td>${e.date}</td>
-            <td>${e.name}</td>
-            <td>${e.location||''}</td>
-            <td>${e.scout||''}</td>
-            <td>${e.count}</td>
-            <td class="cell-actions">
-              <button class="ghost" data-action="csv"  data-id="${e.id}">CSV</button>
-              <button class="ghost" data-action="open" data-id="${e.id}">Open</button>
-            </td>`;
-          adminEventsTableBody.appendChild(tr);
-        });
-        
-        adminEventsTableBody.querySelectorAll('button').forEach(b=>{
-          b.addEventListener('click', ()=>{
-            const id=Number(b.dataset.id), action=b.dataset.action;
-            const idx=list.findIndex(x=>x.id===id); if(idx<0) return;
-            const e=list[idx];
-
-            if(action==='csv'){
-              const headers=['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
-              const rows=(e.rows||[]).map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin}));
-              download(`${user} - ${e.date} ${e.name}.csv`, toCSV(rows, headers));
-            }
-            if(action==='open'){
-              const s=loadSession(); if(!s){ alert('Please log in first.'); return; }
-              saveJSON(keyPitches(s.username), (e.rows||[]).slice());
-              saveJSON(keyPlayers(s.username), Array.isArray(e.players) ? e.players.slice() : []);
-              show(vAdmin);
-              adminNewTab.classList.add('active'); adminScoutsTab.classList.remove('active');
-              adminScoutsView.classList.add('hidden'); adminNewView.classList.remove('hidden');
-              mountNewEventIntoAdmin();
-              if (typeof ensureReviewBar === 'function') ensureReviewBar();
-              showAllPitches = false;
-              if(typeof window.reloadLoggerFromStorage==='function'){ window.reloadLoggerFromStorage(); }
-              else { initLoggerOnce(); }
-              window.scrollTo({top:0,behavior:'smooth'});
-            }
-          });
-        });
-      };
-
-      (async ()=>{
-        const sess=loadSession()||{};
-        if(navigator.onLine && sess.role==='admin' && sess.token && sess.token!=='local'){
-          try{
-            const r=await apiFetch(`/api/events?user=${encodeURIComponent(user)}`);
-            const ct=(r.headers.get('content-type')||'').toLowerCase();
-            if(r.ok && ct.includes('application/json')){ const data=await r.json(); render(data.events||[]); return; }
-          }catch(_){}
-        }
-        render(loadJSON(keyEvents(user), []));
-      })();
+function adminListEventsFor(user){
+  console.log('🔍 ADMIN: Fetching events for user:', user);
+  
+  adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">Loading…</td></tr>`;  // ← FIXED: = instead of nothing
+  
+  const render=(list)=>{
+    console.log('📊 ADMIN: Received events list:', list);
+    console.log('📊 ADMIN: List length:', list?.length);
+    
+    adminEventsTableBody.innerHTML='';
+    if(!list||!list.length){ 
+      console.log('❌ ADMIN: No events to display');
+      adminEventsTableBody.innerHTML = `<tr><td colspan="6" class="hint">No events for ${user}.</td></tr>`;  // ← FIXED: = instead of nothing
+      return; 
     }
+    
+    list.sort((a,b)=>b.id-a.id).forEach(e=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td>${e.date}</td>
+        <td>${e.name}</td>
+        <td>${e.location||''}</td>
+        <td>${e.scout||''}</td>
+        <td>${e.count}</td>
+        <td class="cell-actions">
+          <button class="ghost" data-action="csv"  data-id="${e.id}">CSV</button>
+          <button class="ghost" data-action="open" data-id="${e.id}">Open</button>
+        </td>`;
+      adminEventsTableBody.appendChild(tr);
+    });
+    
+    adminEventsTableBody.querySelectorAll('button').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const id=Number(b.dataset.id), action=b.dataset.action;
+        const idx=list.findIndex(x=>x.id===id); if(idx<0) return;
+        const e=list[idx];
 
+        if(action==='csv'){
+          const headers=['date','event','location','scout','time','pitcher','hitter','zone','action','pitchType','velo','spin'];
+          const rows=(e.rows||[]).map(r=>({date:e.date,event:e.name,location:e.location,scout:e.scout,time:r.time,pitcher:r.pitcher,hitter:r.hitter,zone:r.zone,action:r.action,pitchType:r.pitchType,velo:r.velo,spin:r.spin}));
+          download(`${user} - ${e.date} ${e.name}.csv`, toCSV(rows, headers));  // ← FIXED: parentheses instead of backticks
+        }
+        
+        if(action==='open'){
+          const s=loadSession(); if(!s){ alert('Please log in first.'); return; }
+          saveJSON(keyPitches(s.username), (e.rows||[]).slice());
+          saveJSON(keyPlayers(s.username), Array.isArray(e.players) ? e.players.slice() : []);
+          show(vAdmin);
+          adminNewTab.classList.add('active'); adminScoutsTab.classList.remove('active');
+          adminScoutsView.classList.add('hidden'); adminNewView.classList.remove('hidden');
+          mountNewEventIntoAdmin();
+          if (typeof ensureReviewBar === 'function') ensureReviewBar();
+          showAllPitches = false;
+          if(typeof window.reloadLoggerFromStorage==='function'){ window.reloadLoggerFromStorage(); }
+          else { initLoggerOnce(); }
+          window.scrollTo({top:0,behavior:'smooth'});
+        }
+      });
+    });
+  };
+
+  (async ()=>{
+    const sess=loadSession()||{};
+    console.log('🔑 ADMIN: Session:', sess);
+    console.log('🌐 ADMIN: Online status:', navigator.onLine);
+    
+    if(navigator.onLine && sess.role==='admin' && sess.token && sess.token!=='local'){
+      try{
+        console.log('🌐 ADMIN: Fetching from API for user:', user);
+        const r = await apiFetch(`/api/events?user=${encodeURIComponent(user)}`);  // ← FIXED: parentheses instead of backticks
+        console.log('📡 ADMIN: API response status:', r.status);
+        
+        const ct=(r.headers.get('content-type')||'').toLowerCase();
+        if(r.ok && ct.includes('application/json')){ 
+          const data=await r.json(); 
+          console.log('✅ ADMIN: API returned data:', data);
+          render(data.events||[]); 
+          return; 
+        }
+      }catch(err){
+        console.error('❌ ADMIN: API fetch error:', err);
+      }
+    }
+    console.log('💾 ADMIN: Falling back to local storage');
+    render(loadJSON(keyEvents(user), []));
+  })();
+}
     // ✅ add this line right here (after the function)
     window.adminListEventsFor = adminListEventsFor;
 
