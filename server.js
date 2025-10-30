@@ -1,36 +1,80 @@
-// server.js — deployable Node server (Express 5-safe)
-// - Serves /public/index.html (frontend)
-// - Auth API at /api/login
-// - Events sync API at /api/events (POST/GET)
-// - Works locally (http://localhost:3000) and on hosts (Render/Railway/etc.)
-
+// server.js — PostgreSQL version
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
-const fs = require("fs");
+const { Pool } = require("pg");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SECRET_KEY = process.env.JWT_SECRET || "dev-only-secret";
-console.log("[DEBUG] JWT_SECRET loaded:", process.env.JWT_SECRET ? "env var set" : "FELL BACK TO DEFAULT");
+const DATABASE_URL = process.env.DATABASE_URL;
 
-// ---- Instance identifier for debugging multi-instance/restarts ----
+console.log("[DEBUG] JWT_SECRET loaded:", process.env.JWT_SECRET ? "env var set" : "FELL BACK TO DEFAULT");
+console.log("[DEBUG] DATABASE_URL loaded:", DATABASE_URL ? "✅ Connected" : "❌ Missing");
+
+// Instance identifier
 const INSTANCE_ID = `${process.pid}-${Math.random().toString(36).slice(2,7)}`;
 console.log('[BOOT] Instance', INSTANCE_ID);
 
-// --------- Middleware ----------
+// PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: DATABASE_URL && !DATABASE_URL.includes('localhost') ? { rejectUnauthorized: false } : false
+});
+
+// Test database connection and create table if needed
+(async () => {
+  try {
+    const client = await pool.connect();
+    console.log('[DB] ✅ Connected to PostgreSQL');
+    
+    // Create events table if it doesn't exist
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS events (
+        id BIGSERIAL PRIMARY KEY,
+        user_username VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        date VARCHAR(50) NOT NULL,
+        location VARCHAR(255),
+        scout VARCHAR(255),
+        count INTEGER NOT NULL,
+        rows JSONB NOT NULL,
+        dsp BOOLEAN DEFAULT FALSE,
+        blast JSONB DEFAULT '[]',
+        trackman JSONB DEFAULT '[]',
+        players JSONB DEFAULT '[]',
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    
+    // Create index for faster queries
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_events_user ON events(user_username);
+    `);
+    
+    console.log('[DB] ✅ Events table ready');
+    client.release();
+  } catch (err) {
+    console.error('[DB] ❌ Connection error:', err);
+    process.exit(1);
+  }
+})();
+
+// Middleware
 app.use(express.json());
 app.use(cors());
 
-// ---- Never cache API responses (prevents stale SW/browser caching) ----
+// Never cache API responses
 app.use('/api', (req, res, next) => {
-  res.set('Cache-Control', 'no-store');
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   next();
 });
 
-// --------- Static frontend (/public) ----------
+// Static frontend
 app.use(express.static(path.join(__dirname, "public")));
 
 // --------- Users (plaintext shown is what users type to log in) ----------
@@ -182,12 +226,16 @@ function auth(req, res, next) {
 
 // ---- Events API ----
 
-// POST /api/events  (scout uploads one event; stored server-side)
-app.post("/api/events", auth, (req, res) => {
+const FULLNAME_TO_USERNAME = new Map(
+  USERS.map(u => [(u.fullName || '').trim().toLowerCase(), u.username])
+);
+
+// POST /api/events (scout uploads one event; stored in database)
+app.post("/api/events", auth, async (req, res) => {
   const u = req.user?.username;
   if (!u) return res.status(403).json({ message: "Forbidden" });
+  
   console.log("[SERVER] Received /api/events from", u, "body keys:", Object.keys(req.body));
-
 
   const {
     name = "Untitled",
@@ -205,81 +253,90 @@ app.post("/api/events", auth, (req, res) => {
     return res.status(400).json({ message: "Missing date or rows" });
   }
 
-  const evt = {
-    id: Date.now(),
-    user: u,
-    name,
-    date,
-    location,
-    scout: scout || u,
-    count: rows.length,
-    rows,
-    dsp: !!dsp,
-    blast: Array.isArray(blast) ? blast : [],
-    trackman: Array.isArray(trackman) ? trackman : [],
-    players: Array.isArray(players) ? players : [],
-    createdAt: new Date().toISOString(),
-  };
+  console.log("DEBUG received EVENT FROM", u, "named:", name, "rows:", rows.length);
 
-  console.log("DEBUG received EVENT FROM", u,
-              "named:", name,
-              "rows:", rows.length);
-
-EVENTS.push(evt);
-saveEvents(EVENTS);
-console.log("[SERVER] Saved event:", evt.name, "for", evt.user);
-console.log("[SERVER] TOTAL_EVENTS_AFTER_SAVE =", EVENTS.length, "on", INSTANCE_ID);
-res.json({ ok: true, id: evt.id });
+  try {
+    const result = await pool.query(
+      `INSERT INTO events (user_username, name, date, location, scout, count, rows, dsp, blast, trackman, players)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING id`,
+      [
+        u,
+        name,
+        date,
+        location,
+        scout || u,
+        rows.length,
+        JSON.stringify(rows),
+        dsp,
+        JSON.stringify(Array.isArray(blast) ? blast : []),
+        JSON.stringify(Array.isArray(trackman) ? trackman : []),
+        JSON.stringify(Array.isArray(players) ? players : [])
+      ]
+    );
+    
+    const eventId = result.rows[0].id;
+    console.log("[SERVER] Saved event:", name, "for", u, "with ID", eventId);
+    console.log("[SERVER] Event saved to PostgreSQL on", INSTANCE_ID);
+    
+    res.json({ ok: true, id: eventId });
+  } catch (err) {
+    console.error("[SERVER] Database insert error:", err);
+    res.status(500).json({ message: "Database error" });
+  }
 });
 
-const FULLNAME_TO_USERNAME = new Map(
-  USERS.map(u => [(u.fullName || '').trim().toLowerCase(), u.username])
-);
-
-// ---- GET /api/events (admin can fetch any; scouts only themselves)
-app.get("/api/events", auth, (req, res) => {
+// GET /api/events (admin can fetch any; scouts only themselves)
+app.get("/api/events", auth, async (req, res) => {
   const me = req.user; // { username, role }
   let { user } = req.query;
 
-  // Normalize requested user:
-  // - accept username (any case) OR full name
-  // - fall back to requester if none
+  // Normalize requested user
   const raw = (user || me.username || "").trim();
   const lcRaw = raw.toLowerCase();
-  const normalized = FULLNAME_TO_USERNAME.get(lcRaw) || lcRaw; // final username (lowercased)
+  const normalized = FULLNAME_TO_USERNAME.get(lcRaw) || lcRaw;
 
   console.log("[SERVER] GET /api/events by", me?.username, "role", me?.role, "query raw=", raw, "-> normalized=", normalized);
 
-  // Authz: non-admin can only ask for themselves (after normalization)
+  // Authz: non-admin can only ask for themselves
   if (me.role !== "admin" && normalized !== me.username) {
     return res.status(403).json({ message: "Forbidden" });
   }
 
-  // Tolerant matching for legacy data:
-  // - e.user stored as username (normal case)
-  // - e.user accidentally stored as full name (legacy)
-  // - e.scout holds display full name; map that too
-  const list = EVENTS.filter(e => {
-    const eu = (e.user || "").trim().toLowerCase();
-    const es = (e.scout || "").trim().toLowerCase();
-
-    // exact username match
-    if (eu === normalized) return true;
-
-    // legacy: e.user saved as full name -> map to username
-    const euAsUsername = FULLNAME_TO_USERNAME.get(eu);
-    if (euAsUsername && euAsUsername === normalized) return true;
-
-    // very legacy/tolerant: match by scout full name label
-    const esAsUsername = FULLNAME_TO_USERNAME.get(es);
-    if (esAsUsername && esAsUsername === normalized) return true;
-
-    return false;
-  }).sort((a, b) => b.id - a.id);
-  
-  console.log("[SERVER] RETURNING", list.length, "events for", normalized, "on", INSTANCE_ID);
-  res.json({ user: normalized, events: list });
+  try {
+    const result = await pool.query(
+      `SELECT id, user_username as user, name, date, location, scout, count, rows, dsp, blast, trackman, players, created_at
+       FROM events
+       WHERE user_username = $1
+       ORDER BY id DESC`,
+      [normalized]
+    );
+    
+    // Parse JSON fields back to objects/arrays
+    const events = result.rows.map(row => ({
+      id: parseInt(row.id),
+      user: row.user,
+      name: row.name,
+      date: row.date,
+      location: row.location,
+      scout: row.scout,
+      count: row.count,
+      rows: row.rows, // Already parsed by PostgreSQL
+      dsp: row.dsp,
+      blast: row.blast,
+      trackman: row.trackman,
+      players: row.players,
+      createdAt: row.created_at
+    }));
+    
+    console.log("[SERVER] RETURNING", events.length, "events for", normalized, "on", INSTANCE_ID);
+    res.json({ user: normalized, events });
+  } catch (err) {
+    console.error("[SERVER] Database query error:", err);
+    res.status(500).json({ message: "Database error" });
+  }
 });
+
 
 // --------- SPA fallback (after static + API) ----------
 app.use((req, res, next) => {
