@@ -144,26 +144,6 @@ const USERS = Array.from(seen.values()).map(u => ({
   password: bcrypt.hashSync(u.password, 10),
 }));
 
-// --------- Events persistence (simple JSON file) ----------
-const DATA_FILE = path.join(__dirname, "events.json");
-
-function loadEvents() {
-  try { return JSON.parse(fs.readFileSync(DATA_FILE, "utf8")); }
-  catch { return []; }
-}
-function saveEvents(list) {
-  try { fs.writeFileSync(DATA_FILE, JSON.stringify(list, null, 2)); } catch {}
-}
-let EVENTS = loadEvents(); // [{ id, user, name, date, location, scout, count, rows, dsp, blast, trackman, createdAt }]
-
-// No-cache for all API responses
-app.use('/api', (_req, res, next) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.set('Pragma', 'no-cache');
-  res.set('Expires', '0');
-  next();
-});
-
 // --------- API routes ----------
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
@@ -174,14 +154,22 @@ app.get("/api/__debug/has/:u", (req, res) => {
   res.json({ user: name, exists, count: USERS.length });
 });
 
+// ---- Auth middleware for events API ----
+function auth(req, res, next) {
+  const hdr = req.headers.authorization || "";
+  const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+  if (!token) return res.status(401).json({ message: "Missing token" });
+  try {
+    req.user = jwt.verify(token, SECRET_KEY); // { username, role }
+    next();
+  } catch {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+}
+
 // ---- Debug: whoami + instance ----
 app.get('/api/whoami', auth, (req, res) => {
   res.json({ instance: INSTANCE_ID, user: req.user });
-});
-
-// ---- Debug: events count + instance ----
-app.get('/api/events_count', auth, (_req, res) => {
-  res.json({ instance: INSTANCE_ID, count: EVENTS.length });
 });
 
 // Login
@@ -210,19 +198,6 @@ app.get("/api/users", auth, (req, res) => {
   });
   res.json(byLast.map(u => ({ username: u.username, fullName: u.fullName, role: u.role })));
 });
-
-// ---- Auth middleware for events API ----
-function auth(req, res, next) {
-  const hdr = req.headers.authorization || "";
-  const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
-  if (!token) return res.status(401).json({ message: "Missing token" });
-  try {
-    req.user = jwt.verify(token, SECRET_KEY); // { username, role }
-    next();
-  } catch {
-    return res.status(401).json({ message: "Invalid token" });
-  }
-}
 
 // ---- Events API ----
 
@@ -336,7 +311,6 @@ app.get("/api/events", auth, async (req, res) => {
     res.status(500).json({ message: "Database error" });
   }
 });
-
 
 // --------- SPA fallback (after static + API) ----------
 app.use((req, res, next) => {
