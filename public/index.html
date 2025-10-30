@@ -266,7 +266,7 @@
         </table>
       </section>
 
-      <div style="margin:12px 0px;display:flex;justify-content:flex-end" class="hidden" id="submitEventBanner">
+      <div style="margin:12px 0px;display:none;justify-content:flex-end" id="submitEventBanner">
         <button class="primary" id="bannerSubmitEventBtn">Save Event →</button>
       </div>
 
@@ -680,7 +680,10 @@ window.adminEventsTableBody = adminEventsTableBody;
         requestAnimationFrame(forcePhoneScaleOne);
     
         // Show submit button on New Event tab
-        if(submitEventBanner) submitEventBanner.classList.remove('hidden');
+        if(submitEventBanner) {
+          submitEventBanner.classList.remove('hidden');
+          submitEventBanner.style.display = 'flex';
+        }
     
         // Set today's date if empty
         if(eventDate && !eventDate.value) {
@@ -691,7 +694,10 @@ window.adminEventsTableBody = adminEventsTableBody;
         renderEventsTable();
     
         // Hide submit button on History tab
-        if(submitEventBanner) submitEventBanner.classList.add('hidden');
+        if(submitEventBanner) {
+          submitEventBanner.classList.add('hidden');
+          submitEventBanner.style.display = 'none';
+        }
       }
     });
 
