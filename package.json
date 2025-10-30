@@ -9,7 +9,8 @@
     "corepack": "^0.33.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3"
   },
   "scripts": {
     "start": "node server.js",
