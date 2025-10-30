@@ -152,7 +152,7 @@
 
   /* Event Details Collapsible */
   .event-details-wrapper{
-    margin:0 14px 12px 14px;
+    margin:0 0 12px 0;
   }
   .event-toggle{
     display:flex;
@@ -269,11 +269,7 @@
       <!-- New Event -->
       <section id="scout-new" class="card hidden">
 
-        <!-- Submit Event Banner - Always Visible on New Event Tab -->
-      <div style="margin:12px 0px;display:flex;justify-content:flex-end" class="hidden" id="submitEventBanner">
-        <button class="primary" id="bannerSubmitEventBtn">Submit Event →</button>
-      </div>
-        
+        <!-- Submit Event Banner - Always Visible on New Event Tab -->        
       <div class="event-details-wrapper" id="eventDetailsWrapper">
         <button class="event-toggle" id="eventDetailsToggle" aria-expanded="true">
           Event Details <span class="chev">▾</span>
@@ -309,6 +305,10 @@
           <div id="eventMsg" style="margin-top:10px"></div>
         </div>
       </div>
+
+              <div style="margin:12px 0px;display:flex;justify-content:flex-end" class="hidden" id="submitEventBanner">
+                <button class="primary" id="bannerSubmitEventBtn">Submit Event →</button>
+              </div>
         
         <button id="createToggle" class="roster-toggle" aria-expanded="false">
           Create Player <span class="chev">▾</span>
