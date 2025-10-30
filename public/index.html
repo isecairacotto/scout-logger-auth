@@ -86,7 +86,7 @@
     font-size: 17px;
   }
 
-  .seg button.active{ box-shadow:0 0 0 2px rgba(19,41,75,.08) inset }
+  .seg button.active{ background:var(--navy); color:#fff; border-color:var(--navy); }
   .seg button:focus-visible{ outline:3px solid #cfe4ff; outline-offset:2px }
   #scout-new label{ margin-top: 4px; font-size:16px; font-weight:700 }
 
@@ -757,19 +757,17 @@ window.adminEventsTableBody = adminEventsTableBody;
 
       function commitVeloBox(){
         const v=veloBox.value.trim();
-        if(v===''||v.toUpperCase()==='NA'){ veloTouched=false; veloBox.value=''; blurActive(); return; }
+        if(v===''||v.toUpperCase()==='NA'){ veloTouched=false; veloBox.value=''; return; }
         const n=clamp(parseInt(v)||0, VELO_MIN, VELO_MAX);
         veloTouched=true; veloBox.value=String(n);
-        blurActive();
         forcePhoneScaleOne();
       }
       
       function commitSpinBox(){
         const v=spinBox.value.trim();
-        if(v===''||v.toUpperCase()==='NA'){ spinTouched=false; spinBox.value=''; blurActive(); return; }
+        if(v===''||v.toUpperCase()==='NA'){ spinTouched=false; spinBox.value=''; return; }
         const n=clamp(parseInt(v)||0, SPIN_MIN, SPIN_MAX);
         spinTouched=true; spinBox.value=String(n);
-        blurActive();
         forcePhoneScaleOne();
       }
       
