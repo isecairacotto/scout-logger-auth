@@ -1539,8 +1539,28 @@ function adminListEventsFor(user){
     if(navigator.onLine && sess.role==='admin' && sess.token && sess.token!=='local'){
       try{
         console.log('🌐 ADMIN: Fetching from API for user:', user);
-        const r = await apiFetch(`/api/events?user=${encodeURIComponent(user)}`);  // ← FIXED: parentheses instead of backticks
+  
+        // Use regular fetch instead of apiFetch
+        const sess = loadSession() || {};
+        const r = await fetch(`/api/events?user=${encodeURIComponent(user)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + sess.token
+          },
+          cache: 'no-store'
+        });
+  
         console.log('📡 ADMIN: API response status:', r.status);
+  
+        // Check for 401 Unauthorized
+        if (r.status === 401) {
+          console.error('❌ ADMIN: Unauthorized - token may be invalid');
+          clearSession();
+          alert('Session expired. Please log in again.');
+          routeByRole();
+          return;
+        }
         
         const ct=(r.headers.get('content-type')||'').toLowerCase();
         if(r.ok && ct.includes('application/json')){ 
