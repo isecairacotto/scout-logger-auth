@@ -651,6 +651,20 @@ window.adminEventsTableBody = adminEventsTableBody;
         whoami.textContent=`Signed in as ${s.fullName}${isLocal?' (offline)':''}`;
         topbar.textContent=`${s.fullName}${isLocal?' — Offline mode':''}`;
         show(vScout);
+
+        // Make sure panels are back in scout view
+        const newPanel=document.getElementById('scout-new');
+        const submitBanner=document.getElementById('submitEventBanner');
+        const scoutView=document.getElementById('view-scout');
+    
+        if(newPanel && submitBanner && scoutView && !scoutView.contains(submitBanner)){
+          // Find the history section
+          const historySection = document.getElementById('scout-history');
+          if(historySection && historySection.nextSibling !== submitBanner){
+            scoutView.insertBefore(submitBanner, historySection.nextSibling);
+            scoutView.insertBefore(newPanel, submitBanner.nextSibling);
+          }
+        }
         panelHistory.classList.remove('hidden');
         panelNew.classList.add('hidden');
         if(typeof renderEventsTable==='function') renderEventsTable();
