@@ -1424,17 +1424,34 @@ function renderEventsTable(){
     // ---------- Admin ----------
     let newEventOriginalParent=null;
     function mountNewEventIntoAdmin(){
-      const newPanel=document.getElementById('scout-new'); if(!newPanel)return;
+      const newPanel=document.getElementById('scout-new');
+      const submitBanner=document.getElementById('submitEventBanner');
+      if(!newPanel)return;
       if(!newEventOriginalParent) newEventOriginalParent=newPanel.parentElement;
+
+      document.getElementById('adminNewView').appendChild(submitBanner);
       document.getElementById('adminNewView').appendChild(newPanel);
+      
       newPanel.classList.remove('hidden');
+
+      submitBanner.classList.remove('hidden');
+      submitBanner.style.display = 'flex';
+      
       initLoggerOnce();
     }
+    
     function unmountNewEventBackToScout(){
       const newPanel=document.getElementById('scout-new');
+      const submitBanner=document.getElementById('submitEventBanner');
       if(!newPanel||!newEventOriginalParent) return;
+
+      newEventOriginalParent.appendChild(submitBanner);
       newEventOriginalParent.appendChild(newPanel);
+      
       newPanel.classList.add('hidden');
+
+      submitBanner.classList.add('hidden');
+      submitBanner.style.display = 'none';
     }
 
     const KNOWN_USERS=["faffanis","malvarez","mberumen","fbreton","scabral","jcabrera","jcalderon","pciriaco","tclaus","jcruz","rcubillan","jdavis","jfitzpatrick","egomez","mgroopman","jhernandez","jkaregeannes","jkim","mlaureano","llin","wlobo","kmatsumoto","emedina","amejia","rmendoza","rmora","cmorillo","rmotooka","enanita","dneuman","docando","rpino","eramirez","arequena","hrincones","mrodriguez","eromero","rsaggiadi","lsambo","gschilz","czamora","mcuellar","cschneider","isecairacotto"];
@@ -1585,14 +1602,29 @@ function adminListEventsFor(user){
       adminScoutsTab.classList.add('active'); adminNewTab.classList.remove('active');
       adminScoutsView.classList.remove('hidden'); adminNewView.classList.add('hidden');
       unmountNewEventBackToScout();
+
+      const submitBanner=document.getElementById('submitEventBanner');
+      if(submitBanner) {
+        submitBanner.classList.add('hidden');
+        submitBanner.style.display = 'none';
+      }
     });
+    
     adminNewTab.addEventListener('click', ()=>{
       show(vAdmin);
       adminNewTab.classList.add('active'); adminScoutsTab.classList.remove('active');
       adminScoutsView.classList.add('hidden'); adminNewView.classList.remove('hidden');
       mountNewEventIntoAdmin();
+
+      const submitBanner=document.getElementById('submitEventBanner');
+      if(submitBanner) {
+        submitBanner.classList.remove('hidden');
+        submitBanner.style.display = 'flex';
+      }
+      
       window.scrollTo({top:0,behavior:'smooth'});
     });
+    
     adminScoutSelect.addEventListener('change', () => {
       const opt   = adminScoutSelect.options[adminScoutSelect.selectedIndex];
       const raw   = (opt?.value || '').trim();              // may be username or full name
