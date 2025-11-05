@@ -1024,13 +1024,21 @@ rosterList?.addEventListener('click', (e)=>{
           Array.from(blastTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
           Array.from(trackmanTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
           
-          // hide review bar
-          document.getElementById('reviewBar')?.remove();
-          // collapse the submit panel if it was open
-          const eventDetailsPanel = document.getElementById('eventDetailsPanel');
-          const eventDetailsToggle = document.getElementById('eventDetailsToggle');
-          if(eventDetailsPanel) eventDetailsPanel.classList.add('collapsed');
-          if(eventDetailsToggle) eventDetailsToggle.setAttribute('aria-expanded','false');
+// hide review bar
+document.getElementById('reviewBar')?.remove();
+
+// Re-open Event Details panel for next event (ready for fresh input)
+const eventDetailsPanel = document.getElementById('eventDetailsPanel');
+const eventDetailsToggle = document.getElementById('eventDetailsToggle');
+if(eventDetailsToggle) {
+  eventDetailsToggle.setAttribute('aria-expanded','true');
+  // Update the chevron direction
+  const chev = eventDetailsToggle.querySelector('.chev');
+  if (chev) chev.textContent = '▾';
+}
+if(eventDetailsPanel) {
+  eventDetailsPanel.classList.remove('collapsed');
+}
         });
       }
 
@@ -1313,6 +1321,7 @@ if(bannerSubmitEventBtn){
     eventName.value=''; 
     eventLocation.value=''; 
     scoutName.value='';
+    if (eventDate) eventDate.value = todayMDY();
     ckBlast.checked=false; 
     blastTeamWrap.style.display='none';
     ckTrackman.checked=false; 
@@ -1326,8 +1335,15 @@ if(bannerSubmitEventBtn){
     if (rb) rb.remove();
 
     // Re-open Event Details for next event
-    if(eventDetailsToggle) eventDetailsToggle.setAttribute('aria-expanded','true');
-    if(eventDetailsPanel) eventDetailsPanel.classList.remove('collapsed');
+if(eventDetailsToggle) {
+  eventDetailsToggle.setAttribute('aria-expanded','true');
+  // Update the chevron direction
+  const chev = eventDetailsToggle.querySelector('.chev');
+  if (chev) chev.textContent = '▾';
+}
+if(eventDetailsPanel) {
+  eventDetailsPanel.classList.remove('collapsed');
+}
         
     refreshSelects(); 
     renderEventsTable();
