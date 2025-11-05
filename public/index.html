@@ -282,7 +282,7 @@
         
         <div class="event-panel" id="eventDetailsPanel">
           <div class="grid cols-2">
-            <div><label>Date (MM/DD/YYYY)</label><input id="eventDate" type="text" readonly /></div>
+            <div><label>Date (MM/DD/YYYY)</label><input id="eventDate" type="text" /></div>
             <div><label>Scout Name</label><input id="scoutName" type="text" placeholder="Type your name" /></div>
             <div><label>Event Name</label><input id="eventName" type="text" placeholder="e.g., Perfect Game 17U" /></div>
             <div><label>Location</label><input id="eventLocation" type="text" placeholder="City, ST / Complex" /></div>
@@ -726,6 +726,7 @@ window.adminEventsTableBody = adminEventsTableBody;
     let loggerBooted=false;
     let showAllPitches = false;
     const RECENT_LIMIT = 5;
+    let editingEventId = null;
     function initLoggerOnce(){
       if(loggerBooted) return; loggerBooted=true;
 
@@ -979,7 +980,6 @@ rosterList?.addEventListener('click', (e)=>{
         <span class="hint">Reviewing a saved event</span>
         <div class="right"></div>
         <button class="secondary" id="btnDoneReview" type="button">Done reviewing</button>
-        <button class="primary" id="btnResubmit" type="button">Re-submit</button>
         `;
         document.getElementById('scout-new').insertBefore(bar, document.getElementById('scout-new').firstChild);
         
@@ -993,6 +993,7 @@ rosterList?.addEventListener('click', (e)=>{
           saveJSON(K_PLAYERS, []);
           pitches = [];
           players = [];
+          editingEventId = null;
           renderTable();
           
           // Rebuild selects from cleared roster and force placeholder selection
@@ -1002,13 +1003,13 @@ rosterList?.addEventListener('click', (e)=>{
 
           //Reset "current pitch" widgets + table + counter
           if (typeof resetPitchForm === 'function') resetPitchForm();
-          if (typeof renderTable === 'function')    renderTable();
-          if (typeof countHint !== 'undefined')     countHint.textContent = '0 pitches';
+          if (typeof renderTable === 'function') renderTable();
+          if (typeof countHint !== 'undefined') countHint.textContent = '0 pitches';
           
           // Clear Submit Event fields
-          if (typeof eventName     !== 'undefined') eventName.value     = '';
+          if (typeof eventName     !== 'undefined') eventName.value = '';
           if (typeof eventLocation !== 'undefined') eventLocation.value = '';
-          if (typeof scoutName     !== 'undefined') scoutName.value     = '';
+          if (typeof scoutName     !== 'undefined') scoutName.value = '';
           if (typeof todayMDY === 'function' && typeof eventDate !== 'undefined') {
             eventDate.value = todayMDY(); // optional: reset date to today
           }
@@ -1030,15 +1031,6 @@ rosterList?.addEventListener('click', (e)=>{
           const eventDetailsToggle = document.getElementById('eventDetailsToggle');
           if(eventDetailsPanel) eventDetailsPanel.classList.add('collapsed');
           if(eventDetailsToggle) eventDetailsToggle.setAttribute('aria-expanded','false');
-        });
-        
-        document.getElementById('btnResubmit').addEventListener('click', () => {
-          // open the submit panel with current rows/roster visible
-          const eventDetailsPanel = document.getElementById('eventDetailsPanel');
-          const eventDetailsToggle = document.getElementById('eventDetailsToggle');
-          if(eventDetailsPanel) eventDetailsPanel.classList.remove('collapsed');
-          if(eventDetailsToggle) eventDetailsToggle.setAttribute('aria-expanded','true');
-          eventDetailsPanel?.scrollIntoView({ behavior:'smooth' });
         });
       }
 
@@ -1197,105 +1189,155 @@ rosterList?.addEventListener('click', (e)=>{
         });
       }
       
-      // Banner Submit Event button - saves and clears everything
-      if(bannerSubmitEventBtn){
-        bannerSubmitEventBtn.addEventListener('click',()=>{
-          const s=loadSession()||{};
-          const user=s.username||'guest';
-          const K_EVENTS=keyEvents(user);
-          const K_PITCHES=keyPitches(user);
-          const K_PLAYERS=keyPlayers(user);
+    // Banner Submit Event button - saves and clears everything
+if(bannerSubmitEventBtn){
+  bannerSubmitEventBtn.addEventListener('click', async ()=>{ // ← ADD async here
+    const s=loadSession()||{};
+    const user=s.username||'guest';
+    const K_EVENTS=keyEvents(user);
+    const K_PITCHES=keyPitches(user);
+    const K_PLAYERS=keyPlayers(user);
 
-          const name=(eventName.value||'').trim()||'Untitled';
-          const date=(eventDate.value||todayMDY()).trim();
-          const location=(eventLocation.value||'').trim();
-          const scout=(scoutName.value||s.fullName||user).trim();
+    const name=(eventName.value||'').trim()||'Untitled';
+    const date=(eventDate.value||todayMDY()).trim();
+    const location=(eventLocation.value||'').trim();
+    const scout=(scoutName.value||s.fullName||user).trim();
 
-          const rows=loadJSON(K_PITCHES, []);
-          if(!rows.length){ alert('No pitches to submit.'); return; }
+    const rows=loadJSON(K_PITCHES, []);
+    if(!rows.length){ alert('No pitches to submit.'); return; }
 
-          const dsp = dspToggle.classList.contains('active');
-          const blast = ckBlast.checked ? Array.from(blastTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
-          const trackman = ckTrackman.checked ? Array.from(trackmanTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
-          const currentPlayers = loadJSON(K_PLAYERS, []);
+    const dsp = dspToggle.classList.contains('active');
+    const blast = ckBlast.checked ? Array.from(blastTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
+    const trackman = ckTrackman.checked ? Array.from(trackmanTeams.querySelectorAll('input:checked')).map(c=>c.value) : [];
+    const currentPlayers = loadJSON(K_PLAYERS, []);
 
-          const evts=loadJSON(K_EVENTS, []);
-          const evt={
-            id:Date.now(), user, name, date, location, scout,
-            count:rows.length, rows:rows.slice(),
-            players: currentPlayers.slice(),
-            dsp, blast, trackman
-          };
-          evts.push(evt); saveJSON(K_EVENTS, evts);
+    const evts=loadJSON(K_EVENTS, []);
 
-          (async()=>{
-            try{
-              const sess=loadSession()||{};
-              if (sess.token && sess.token!=='local') {
-                const payload={ name,date,location,scout, rows, dsp,blast,trackman, players: currentPlayers };
-                console.log("DEBUG posting event payload", payload);
-                console.log("DEBUG using token", sess.token);
+    // Check if we're editing an existing event
+    if (editingEventId !== null) {
+      // UPDATE existing event
+      const existingIndex = evts.findIndex(e => e.id === editingEventId); // ← FIXED typos
 
-                
-                const r=await fetch('/api/events', {
-                  method:'POST',
-                  headers:{'Content-Type':'application/json','Authorization':'Bearer '+sess.token},
-                  body:JSON.stringify(payload)
-                });
+      if (existingIndex >= 0) {
+        evts[existingIndex] = {
+          ...evts[existingIndex],
+          name,
+          date,
+          location,
+          scout,
+          count: rows.length,
+          rows: rows.slice(),
+          players: currentPlayers.slice(),
+          dsp,
+          blast,
+          trackman
+        };
+        
+        saveJSON(K_EVENTS, evts);
+        
+        try {
+          const sess=loadSession()||{};
+          if (sess.token && sess.token!=='local') {
+            const payload = {
+              name, date, location, scout, rows, dsp, blast, trackman, players: currentPlayers 
+            };
 
-                console.log("DEBUG /api/events response status:", r.status);
-                
-                const ct=(r.headers.get('content-type')||'').toLowerCase();
-                if (r.status === 202 && ct.includes('application/json')) {
-                  const j = await r.json();
-                  if (j.queued) {
-                    eventMsg.innerHTML = '<div class="success">Saved locally - will sync when online.</div>';
-                  }
-                } else if (!r.ok || !ct.includes('application/json')) {
-          // treat as offline; SW may still queue it
-          eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
+            await fetch('/api/events', {
+              method:'POST',
+              headers:{
+                'Content-Type':'application/json',
+                'Authorization':'Bearer '+sess.token
+              },
+              body:JSON.stringify(payload)
+            });
+          }
+        } catch (err) {
+          console.error('Failed to sync update to server:', err);
         }
-        // If r.ok 200/201 -> nothing extra to show
-      } else {
-        // offline now; SW queues it, we show the same hint
-        eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
+        
+        eventMsg.innerHTML = '<div class="success">Event updated successfully!</div>';
       }
-    } catch {
-      // Network error; SW likely queued it already
-      eventMsg.innerHTML = '<div class="success">Saved locally — will sync when online.</div>';
+    } else {
+      // CREATE new event
+      const evt = {
+        id: Date.now(),
+        user,
+        name,
+        date,
+        location,
+        scout,
+        count: rows.length,
+        rows: rows.slice(),
+        players: currentPlayers.slice(),
+        dsp,
+        blast,
+        trackman 
+      };
+
+      evts.push(evt);
+      saveJSON(K_EVENTS, evts);
+
+      try {
+        const sess = loadSession() || {};
+        if(sess.token && sess.token !== 'local') {
+          const payload = {
+            name, date, location, scout, rows, dsp, blast, trackman, players: currentPlayers 
+          };
+
+          await fetch('/api/events', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + sess.token 
+            },
+            body: JSON.stringify(payload) 
+          }); 
+        }
+      } catch (err) {
+        console.error('Failed to save to server:', err);
+      }
+
+      eventMsg.innerHTML = '<div class="success">Event submitted. Saved to History & cleared current log.</div>'; 
     }
-  })();
 
-  // Clear working sets (storage + in-memory) and UI
-  saveJSON(K_PITCHES,[]); 
-  saveJSON(K_PLAYERS,[]);
-  pitches = [];
-  players = [];
-  showAllPitches = false;
-  renderTable();
+    // Clear working sets (storage + in-memory) and UI
+    saveJSON(K_PITCHES,[]); 
+    saveJSON(K_PLAYERS,[]);
+    pitches = [];
+    players = [];
+    showAllPitches = false;
+    editingEventId = null;
+    renderTable();
 
-  playerNameInput.value=''; eventName.value=''; eventLocation.value=''; scoutName.value='';
-  ckBlast.checked=false; blastTeamWrap.style.display='none';
-  ckTrackman.checked=false; trackmanTeamWrap.style.display='none';
-  dspToggle.classList.remove('active'); dspToggle.textContent='No'; dspChecklist.classList.remove('show');
+    playerNameInput.value=''; 
+    eventName.value=''; 
+    eventLocation.value=''; 
+    scoutName.value='';
+    ckBlast.checked=false; 
+    blastTeamWrap.style.display='none';
+    ckTrackman.checked=false; 
+    trackmanTeamWrap.style.display='none';
+    dspToggle.classList.remove('active'); 
+    dspToggle.textContent='No'; 
+    dspChecklist.classList.remove('show');
 
-  // if a review bar is showing, hide it
-  const rb = document.getElementById('reviewBar');
-  if (rb) rb.remove();
+    // if a review bar is showing, hide it
+    const rb = document.getElementById('reviewBar');
+    if (rb) rb.remove();
 
-  // Re-open Event Details for next event
-  if(eventDetailsToggle) eventDetailsToggle.setAttribute('aria-expanded','true');
-  if(eventDetailsPanel) eventDetailsPanel.classList.remove('collapsed');
+    // Re-open Event Details for next event
+    if(eventDetailsToggle) eventDetailsToggle.setAttribute('aria-expanded','true');
+    if(eventDetailsPanel) eventDetailsPanel.classList.remove('collapsed');
+        
+    refreshSelects(); 
+    renderEventsTable();
+    setTimeout(()=>{ eventMsg.innerHTML=''; }, 2000);
+  });
+}
 
-  eventMsg.innerHTML='<div class="success">Event submitted. Saved to History & cleared current log.</div>';
-  refreshSelects(); 
-  renderEventsTable();
-  setTimeout(()=>{ eventMsg.innerHTML=''; }, 2000);
-        });
-      }
-
-      refreshSelects(); renderTable();
-    } // initLoggerOnce
+refreshSelects(); 
+renderTable();
+} // initLoggerOnce
 
     // ---------- History rendering + CSV ----------
 function renderEventsTable(){
@@ -1375,19 +1417,32 @@ function renderEventsTable(){
           saveJSON(keyPitches(user), (e.rows || []).slice());
           saveJSON(keyPlayers(user), Array.isArray(e.players) ? e.players.slice() : []);
 
+          editingEventId = e.id;
+
           // show New tab and rebuild UI (unchanged from your fixed version)
           document.querySelector('[data-tab="new"]').click();
+
+          // Pre-fill Event Details
+          if (eventDate) eventDate.value = e.date || '';
+          if (eventName) eventName.value = e.name || '';
+          if (eventLocation) eventLocation.value = e.location || '';
+          if (scoutName) scoutName.value = e.scout || '';
 
           if (e.dsp){
             dspToggle.classList.add('active');
             dspToggle.textContent='Yes';
             dspToggle.setAttribute('aria-pressed','true');
             dspChecklist.classList.add('show');
+
+            if (ckBlast) ckBlast.checked = Array.isArray(e.blast) && e.blast.length > 0;
+            if (ckTrackman) ckTrackman.checked = Array.isArray(e.trackman) && e.trackman.length > 0;
           } else {
             dspToggle.classList.remove('active');
             dspToggle.textContent='No';
             dspToggle.setAttribute('aria-pressed','false');
             dspChecklist.classList.remove('show');
+            if (ckBlast) ckBlast.checked = false;
+            if (ckTrackman) ckTrackman.checked = false;
           }
 
           if (Array.isArray(e.blast)) {
@@ -1417,7 +1472,7 @@ function renderEventsTable(){
       });
     });
   })();
-}
+} 
 
     exportAllCsvBtn.addEventListener('click', ()=>{
       const s=loadSession()||{};
@@ -1541,12 +1596,55 @@ function adminListEventsFor(user){
         
         if(action==='open'){
           const s=loadSession(); if(!s){ alert('Please log in first.'); return; }
+          
           saveJSON(keyPitches(s.username), (e.rows||[]).slice());
           saveJSON(keyPlayers(s.username), Array.isArray(e.players) ? e.players.slice() : []);
+
+          editingEventId = e.id;
+          
           show(vAdmin);
           adminNewTab.classList.add('active'); adminScoutsTab.classList.remove('active');
           adminScoutsView.classList.add('hidden'); adminNewView.classList.remove('hidden');
           mountNewEventIntoAdmin();
+
+          // Pre-fill Event Details
+  if (eventDate) eventDate.value = e.date || '';
+  if (eventName) eventName.value = e.name || '';
+  if (eventLocation) eventLocation.value = e.location || '';
+  if (scoutName) scoutName.value = e.scout || '';
+
+  // Restore DSP settings
+  if (e.dsp){
+    dspToggle.classList.add('active');
+    dspToggle.textContent='Yes';
+    dspToggle.setAttribute('aria-pressed','true');
+    dspChecklist.classList.add('show');
+    
+    if (ckBlast) ckBlast.checked = Array.isArray(e.blast) && e.blast.length > 0;
+    if (ckTrackman) ckTrackman.checked = Array.isArray(e.trackman) && e.trackman.length > 0;
+  } else {
+    dspToggle.classList.remove('active');
+    dspToggle.textContent='No';
+    dspToggle.setAttribute('aria-pressed','false');
+    dspChecklist.classList.remove('show');
+    if (ckBlast) ckBlast.checked = false;
+    if (ckTrackman) ckTrackman.checked = false;
+  }
+
+  // Restore team selections
+  if (Array.isArray(e.blast)) {
+    Array.from(blastTeams.querySelectorAll('input')).forEach(cb=>{
+      cb.checked = e.blast.includes(cb.value);
+    });
+    blastTeamWrap.style.display = e.blast.length ? 'block' : 'none';
+  }
+  if (Array.isArray(e.trackman)) {
+    Array.from(trackmanTeams.querySelectorAll('input')).forEach(cb=>{
+      cb.checked = e.trackman.includes(cb.value);
+    });
+    trackmanTeamWrap.style.display = e.trackman.length ? 'block' : 'none';
+  }
+          
           if (typeof ensureReviewBar === 'function') ensureReviewBar();
           showAllPitches = false;
           if(typeof window.reloadLoggerFromStorage==='function'){ window.reloadLoggerFromStorage(); }
@@ -1558,50 +1656,48 @@ function adminListEventsFor(user){
   };
 
   (async ()=>{
-    const sess=loadSession()||{};
-    console.log('🔑 ADMIN: Session:', sess);
-    console.log('🌐 ADMIN: Online status:', navigator.onLine);
-    
-    if(navigator.onLine && sess.role==='admin' && sess.token && sess.token!=='local'){
-      try{
-        console.log('🌐 ADMIN: Fetching from API for user:', user);
+  const sess=loadSession()||{};
+  console.log('🔑 ADMIN: Session:', sess);
+  console.log('🌐 ADMIN: Online status:', navigator.onLine);
   
-        // Use regular fetch instead of apiFetch
-        const sess = loadSession() || {};
-        const r = await fetch(`/api/events?user=${encodeURIComponent(user)}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + sess.token
-          },
-          cache: 'no-store'
-        });
-  
-        console.log('📡 ADMIN: API response status:', r.status);
-  
-        // Check for 401 Unauthorized
-        if (r.status === 401) {
-          console.error('❌ ADMIN: Unauthorized - token may be invalid');
-          clearSession();
-          alert('Session expired. Please log in again.');
-          routeByRole();
-          return;
-        }
-        
-        const ct=(r.headers.get('content-type')||'').toLowerCase();
-        if(r.ok && ct.includes('application/json')){ 
-          const data=await r.json(); 
-          console.log('✅ ADMIN: API returned data:', data);
-          render(data.events||[]); 
-          return; 
-        }
-      }catch(err){
-        console.error('❌ ADMIN: API fetch error:', err);
+  if(navigator.onLine && sess.role==='admin' && sess.token && sess.token!=='local'){
+    try{
+      console.log('🌐 ADMIN: Fetching from API for user:', user);
+
+      const r = await fetch(`/api/events?user=${encodeURIComponent(user)}`, {  // ← CORRECT: parentheses around the URL
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + sess.token
+        },
+        cache: 'no-store'
+      });
+
+      console.log('📡 ADMIN: API response status:', r.status);
+
+      // Check for 401 Unauthorized
+      if (r.status === 401) {
+        console.error('❌ ADMIN: Unauthorized - token may be invalid');
+        clearSession();
+        alert('Session expired. Please log in again.');
+        routeByRole();
+        return;
       }
+      
+      const ct=(r.headers.get('content-type')||'').toLowerCase();
+      if(r.ok && ct.includes('application/json')){ 
+        const data=await r.json(); 
+        console.log('✅ ADMIN: API returned data:', data);
+        render(data.events||[]); 
+        return; 
+      }
+    }catch(err){
+      console.error('❌ ADMIN: API fetch error:', err);
     }
-    console.log('💾 ADMIN: Falling back to local storage');
-    render(loadJSON(keyEvents(user), []));
-  })();
+  }
+  console.log('💾 ADMIN: Falling back to local storage');
+  render(loadJSON(keyEvents(user), []));
+})();
 }
     // ✅ add this line right here (after the function)
     window.adminListEventsFor = adminListEventsFor;
