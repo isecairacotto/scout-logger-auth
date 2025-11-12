@@ -306,7 +306,10 @@
           </div>
 
           <div style="height:12px"></div>
-          <button class="primary" id="saveEventDetailsBtn">Save Event Details</button>
+          <div style="display:flex;gap:10px;align-items:center">
+            <button class="primary" id="saveEventDetailsBtn">Save Event Details</button>
+            <button class="secondary" id="clearEventBtn" style="margin-left:auto">Clear Event</button>
+          </div>
           <div id="eventMsg" style="margin-top:10px"></div>
         </div>
       </div>
@@ -1220,6 +1223,61 @@ if(eventDetailsPanel) {
           setTimeout(()=>saveEventDetailsBtn.textContent='Save Event Details',1000);
         });
       }
+
+      // Clear Event button - wipes everything WITHOUT saving
+const clearEventBtn = document.getElementById('clearEventBtn');
+if(clearEventBtn){
+  clearEventBtn.addEventListener('click',()=>{
+    if(!confirm('Clear all event data without saving? This cannot be undone.')) return;
+    
+    const s = loadSession() || {};
+    const user = s.username || 'guest';
+    const K_PITCHES = keyPitches(user);
+    const K_PLAYERS = keyPlayers(user);
+    
+    // Clear storage
+    saveJSON(K_PITCHES, []); 
+    saveJSON(K_PLAYERS, []);
+    pitches = [];
+    players = [];
+    editingEventId = null;
+    
+    // Clear Event Details fields
+    if (eventName) eventName.value = '';
+    if (eventLocation) eventLocation.value = '';
+    if (scoutName) scoutName.value = '';
+    if (eventDate) eventDate.value = todayMDY();
+    
+    // Reset DSP UI
+    dspToggle.classList.remove('active');
+    dspToggle.textContent='No';
+    dspToggle.setAttribute('aria-pressed','false');
+    dspChecklist.classList.remove('show');
+    ckBlast.checked=false; 
+    blastTeamWrap.style.display='none';
+    ckTrackman.checked=false; 
+    trackmanTeamWrap.style.display='none';
+    Array.from(blastTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
+    Array.from(trackmanTeams.querySelectorAll('input[type="checkbox"]')).forEach(cb => cb.checked = false);
+    
+    // Clear pitch form
+    if (typeof resetPitchForm === 'function') resetPitchForm();
+    
+    // Rebuild selects and table
+    if (typeof refreshSelects === 'function') refreshSelects();
+    if (pitcherSelect) pitcherSelect.selectedIndex = 0;
+    if (batterSelect) batterSelect.selectedIndex = 0;
+    if (typeof renderTable === 'function') renderTable();
+    if (countHint) countHint.textContent = '0 pitches';
+    
+    // Remove review bar if present
+    document.getElementById('reviewBar')?.remove();
+    
+    // Show confirmation message
+    eventMsg.innerHTML = '<div class="success">Event cleared successfully!</div>';
+    setTimeout(()=>{ eventMsg.innerHTML=''; }, 2000);
+  });
+}
       
     // Banner Submit Event button - saves and clears everything
 if(bannerSubmitEventBtn){
