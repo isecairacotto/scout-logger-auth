@@ -760,9 +760,33 @@ window.adminEventsTableBody = adminEventsTableBody;
       window.reloadLoggerFromStorage=reloadLoggerFromStorage;
 
       roleSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(roleSeg,e.target); });
-      zoneSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(zoneSeg,e.target); });
-      actionSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(actionSeg,e.target); });
-      pitchTypeSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(pitchTypeSeg,e.target); });
+      zoneSeg.addEventListener('click', e=>{
+        if(e.target.tagName==='BUTTON') {
+          if(e.target.classList.contains('activce')) {
+            clearActive(zoneSeg);
+          } else {
+            setActive(zoneSeg, e.target); 
+          } 
+        } 
+      });
+      actionSeg.addEventListener('click', e=>{
+        if(e.target.tagName==='BUTTON') {
+          if(e.target.classList.contains('active')) {
+            clearActive(actionSeg);
+          } else {
+            setActive(actionSeg, e.target); 
+          }
+        } 
+      });
+      pitchTypeSeg.addEventListener('click', e=>{ 
+        if(e.target.tagName==='BUTTON') {
+          if(e.target.classList.contains('active')) {
+            clearActive(pitchTypeSeg); 
+          } else {
+            setActive(pitchTypeSeg,e.target); 
+          } 
+        } 
+      });
 
       const VELO_MIN=50, VELO_MAX=105, SPIN_MIN=500, SPIN_MAX=4000;
       let veloTouched=false, spinTouched=false;
