@@ -762,7 +762,7 @@ window.adminEventsTableBody = adminEventsTableBody;
       roleSeg.addEventListener('click', e=>{ if(e.target.tagName==='BUTTON') setActive(roleSeg,e.target); });
       zoneSeg.addEventListener('click', e=>{
         if(e.target.tagName==='BUTTON') {
-          if(e.target.classList.contains('activce')) {
+          if(e.target.classList.contains('active')) {
             clearActive(zoneSeg);
           } else {
             setActive(zoneSeg, e.target); 
