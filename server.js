@@ -86,7 +86,6 @@ const RAW_USERS = [
   { username: "jcabrera",      password: "jcabrera",      role: "scout", fullName: "Jose Cabrera" },
   { username: "jcalderon",     password: "jcalderon",     role: "scout", fullName: "Juan Carlos Calderon" },
   { username: "rcastro",       password: "rcastro",       role: "scout", fullName: "Richard Castro" },
-  { username: "pciriaco",      password: "pciriaco",      role: "scout", fullName: "Pedro Ciriaco" },
   { username: "tclaus",        password: "tclaus",        role: "scout", fullName: "Todd Claus" },
   { username: "jcruz",         password: "jcruz",         role: "scout", fullName: "Jonathan Cruz" },
   { username: "jfitzpatrick",  password: "jfitzpatrick",  role: "scout", fullName: "John Fitzpatrick" },
