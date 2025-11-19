@@ -113,7 +113,6 @@ const RAW_USERS = [
   { username: "arequena",      password: "arequena",      role: "scout", fullName: "Alex Requena" },
   { username: "hrincones",     password: "hrincones",     role: "scout", fullName: "Hector Rincones" },
   { username: "eromero",       password: "eromero",       role: "scout", fullName: "Eddie Romero" },
-  { username: "lsambo",        password: "lsambo",        role: "scout", fullName: "Luigi Sambo" },
   { username: "gschilz",       password: "gschilz",       role: "scout", fullName: "Greg Schilz" },
   { username: "czamora",       password: "czamora",       role: "scout", fullName: "Cesar Zamora" },
   // admins
